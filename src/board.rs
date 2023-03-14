@@ -64,9 +64,9 @@ impl Board {
     /// # Returns
     /// * `Ok(())` if the move is legal
     /// * `Err(())` if the move is illegal
-    pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
+    pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), &str> {
         if !is_legal_move(&self.cases, bmove, &color) {
-            return Err(());
+            return Err("Illegal move");
         }
         self.cases[bmove.0][bmove.1] = color;
 

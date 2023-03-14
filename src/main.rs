@@ -20,6 +20,7 @@ use rules::enemy;
 use std::io::stdout;
 
 fn main() {
+	let is_win = cfg!(windows);
     let mut rng = rand::thread_rng();
     let mut board = Board::new();
     let mut turn = Case::Black;
@@ -44,7 +45,7 @@ fn main() {
                 _ => (),
             }
         }
-        stdout.queue(MoveUp(10)).unwrap();
+        stdout.queue(MoveUp(if is_win {9} else {10})).unwrap();
     }
 
     println!("{}", board);
