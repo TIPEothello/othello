@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 11:19:19
+ Last Modified: 14/03/2023 11:20:46
  Modified By: realbacon
  -----
  License  : MIT
@@ -17,7 +17,7 @@ use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventSta
 use crossterm::{cursor::MoveDown, cursor::MoveUp, QueueableCommand};
 use rand::seq::SliceRandom;
 use rules::enemy;
-use std::io::{stdout, Write};
+use std::io::stdout;
 
 fn main() {
     let mut rng = rand::thread_rng();
