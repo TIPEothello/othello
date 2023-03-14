@@ -1,9 +1,21 @@
+/*
+ File: main.rs
+ Created Date: 14 Mar 2023
+ Author: realbacon
+ -----
+ Last Modified: 14/03/2023 10:46:13
+ Modified By: realbacon
+ -----
+ License  : MIT
+ -----
+*/
+
+
 mod board;
 mod rules;
 
 use board::Board;
 use board::Case;
-use rules::enemy;
 use rand::seq::SliceRandom;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind, KeyEventState};
 
@@ -28,9 +40,18 @@ fn main() {
 
 	}
 
-	println!("{}", board);
+    println!("{}", board);
 
-	let (white, black) = board.score();
-	println!("White: {}, Black: {}", white, black);
-	print!("Winner: {}" , if white > black { "White" } else if black > white { "Black" } else { "Draw" });
+    let (white, black) = board.score();
+    println!("White: {}, Black: {}", white, black);
+    println!(
+        "Winner: {}",
+        if white > black {
+            "White"
+        } else if black > white {
+            "Black"
+        } else {
+            "Draw"
+        }
+    );
 }

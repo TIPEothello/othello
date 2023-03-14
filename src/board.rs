@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 05:11:39
+ Last Modified: 14/03/2023 10:57:38
  Modified By: realbacon
  -----
  License  : MIT
@@ -33,8 +33,20 @@ impl Display for Case {
 pub struct Board {
     cases: Vec<Vec<Case>>,
 }
-
+const DIRECTIONS: [(i8, i8); 8] = [
+    (1, 0),
+    (1, 1),
+    (0, 1),
+    (-1, 1),
+    (-1, 0),
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+];
 impl Board {
+    /// Create a new board
+    /// # Returns
+    /// * A new board
     pub fn new() -> Self {
         let mut board = Board {
             cases: vec![vec![Case::Empty; 8]; 8],
@@ -45,23 +57,20 @@ impl Board {
         board.cases[4][3] = Case::Black;
         board
     }
-
+    /// Make a move on the board
+    /// # Arguments
+    /// * `bmove` - The move to make
+    /// * `color` - The color of the player
+    /// # Returns
+    /// * `Ok(())` if the move is legal
+    /// * `Err(())` if the move is illegal
     pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
         if !is_legal_move(&self.cases, bmove, &color) {
             return Err(());
         }
         self.cases[bmove.0][bmove.1] = color;
 
-        for direction in vec![
-            (1, 0),
-            (1, 1),
-            (0, 1),
-            (-1, 1),
-            (-1, 0),
-            (-1, -1),
-            (0, -1),
-            (1, -1),
-        ] {
+        for direction in DIRECTIONS {
             if check_direction(
                 &self.cases,
                 (bmove.0 as i8, bmove.1 as i8),
@@ -79,7 +88,9 @@ impl Board {
         }
         Ok(())
     }
-
+    /// Returns a vector of all the available moves for a given color
+    /// # Arguments
+    /// * `color` - The color of the player
     pub fn available_moves(&self, color: &Case) -> Vec<(usize, usize)> {
         let mut moves = Vec::new();
         for i in 0..8 {
@@ -91,21 +102,21 @@ impl Board {
         }
         moves
     }
-
-	pub fn score(&self) -> (usize, usize) {
-		let mut white = 0;
-		let mut black = 0;
-		for line in self.cases.iter() {
-			for case in line.iter() {
-				match case {
-					Case::White => white += 1,
-					Case::Black => black += 1,
-					Case::Empty => (),
-				}
-			}
-		}
-		(white, black)
-	}
+    /// Returns the score of the board
+    pub fn score(&self) -> (usize, usize) {
+        let mut white = 0;
+        let mut black = 0;
+        for line in self.cases.iter() {
+            for case in line.iter() {
+                match case {
+                    Case::White => white += 1,
+                    Case::Black => black += 1,
+                    Case::Empty => (),
+                }
+            }
+        }
+        (white, black)
+    }
 }
 
 impl Display for Board {
