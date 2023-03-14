@@ -20,6 +20,16 @@ pub enum Case {
     Black,
 }
 
+impl Display for Case {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Case::Empty => write!(f, "Empty"),
+			Case::White => write!(f, "White"),
+			Case::Black => write!(f, "Black"),
+		}
+	}
+}
+
 pub struct Board {
     cases: Vec<Vec<Case>>,
 }
@@ -99,7 +109,7 @@ impl Board {
 }
 
 impl Display for Board {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut string = String::new();
         for line in self.cases.iter() {
             for case in line.iter() {
@@ -130,9 +140,10 @@ impl Display for Board {
 #[test]
 fn make_move_test() {
     let mut board = Board::new();
-    board.make_move((0, 0), Case::White).unwrap();
-    assert_eq!(board.cases[0][0], Case::White);
-    assert_eq!(board.cases[3][3], Case::White);
+    board.make_move((0, 0), Case::White).expect_err("Move should not be legal");
+    assert_eq!(board.cases[0][0], Case::Empty); // Check that the move was not made
+	// Check the initial board
+    assert_eq!(board.cases[3][3], Case::White); 
     assert_eq!(board.cases[4][4], Case::White);
     assert_eq!(board.cases[3][4], Case::Black);
     assert_eq!(board.cases[4][3], Case::Black);

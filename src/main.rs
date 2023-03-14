@@ -5,6 +5,7 @@ use board::Board;
 use board::Case;
 use rules::enemy;
 use rand::seq::SliceRandom;
+use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind, KeyEventState};
 
 fn main() {
 	let mut rng = rand::thread_rng();
@@ -16,6 +17,15 @@ fn main() {
 		let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
 		board.make_move(bmove, turn).unwrap();
 		turn = enemy(&turn);
+		// Wait for user to press enter
+
+		loop {
+			match read().unwrap() {
+				Event::Key(KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE }) => break,
+				_ => (),
+			}
+		}
+
 	}
 
 	println!("{}", board);
