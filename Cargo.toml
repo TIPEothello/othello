@@ -2,3 +2,6 @@
 name = "othello"
 version = "0.0.1"
 edition = "2021"
+
+[dependencies]
+ansi_term = "0.12.1"
