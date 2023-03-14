@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 05:11:39
+ Last Modified: 14/03/2023 10:53:40
  Modified By: realbacon
  -----
  License  : MIT
@@ -23,7 +23,16 @@ pub enum Case {
 pub struct Board {
     cases: Vec<Vec<Case>>,
 }
-
+const DIRECTIONS: [(i8, i8); 8] = [
+    (1, 0),
+    (1, 1),
+    (0, 1),
+    (-1, 1),
+    (-1, 0),
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+];
 impl Board {
     pub fn new() -> Self {
         let mut board = Board {
@@ -42,16 +51,7 @@ impl Board {
         }
         self.cases[bmove.0][bmove.1] = color;
 
-        for direction in vec![
-            (1, 0),
-            (1, 1),
-            (0, 1),
-            (-1, 1),
-            (-1, 0),
-            (-1, -1),
-            (0, -1),
-            (1, -1),
-        ] {
+        for direction in DIRECTIONS {
             if check_direction(
                 &self.cases,
                 (bmove.0 as i8, bmove.1 as i8),
@@ -82,20 +82,20 @@ impl Board {
         moves
     }
 
-	pub fn score(&self) -> (usize, usize) {
-		let mut white = 0;
-		let mut black = 0;
-		for line in self.cases.iter() {
-			for case in line.iter() {
-				match case {
-					Case::White => white += 1,
-					Case::Black => black += 1,
-					Case::Empty => (),
-				}
-			}
-		}
-		(white, black)
-	}
+    pub fn score(&self) -> (usize, usize) {
+        let mut white = 0;
+        let mut black = 0;
+        for line in self.cases.iter() {
+            for case in line.iter() {
+                match case {
+                    Case::White => white += 1,
+                    Case::Black => black += 1,
+                    Case::Empty => (),
+                }
+            }
+        }
+        (white, black)
+    }
 }
 
 impl Display for Board {
