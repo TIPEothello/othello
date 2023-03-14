@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 10:53:40
+ Last Modified: 14/03/2023 10:57:38
  Modified By: realbacon
  -----
  License  : MIT
@@ -34,6 +34,9 @@ const DIRECTIONS: [(i8, i8); 8] = [
     (1, -1),
 ];
 impl Board {
+    /// Create a new board
+    /// # Returns
+    /// * A new board
     pub fn new() -> Self {
         let mut board = Board {
             cases: vec![vec![Case::Empty; 8]; 8],
@@ -44,7 +47,13 @@ impl Board {
         board.cases[4][3] = Case::Black;
         board
     }
-
+    /// Make a move on the board
+    /// # Arguments
+    /// * `bmove` - The move to make
+    /// * `color` - The color of the player
+    /// # Returns
+    /// * `Ok(())` if the move is legal
+    /// * `Err(())` if the move is illegal
     pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
         if !is_legal_move(&self.cases, bmove, &color) {
             return Err(());
@@ -69,7 +78,9 @@ impl Board {
         }
         Ok(())
     }
-
+    /// Returns a vector of all the available moves for a given color
+    /// # Arguments
+    /// * `color` - The color of the player
     pub fn available_moves(&self, color: &Case) -> Vec<(usize, usize)> {
         let mut moves = Vec::new();
         for i in 0..8 {
@@ -81,7 +92,7 @@ impl Board {
         }
         moves
     }
-
+    /// Returns the score of the board
     pub fn score(&self) -> (usize, usize) {
         let mut white = 0;
         let mut black = 0;
