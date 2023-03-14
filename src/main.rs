@@ -19,4 +19,8 @@ fn main() {
 	}
 
 	println!("{}", board);
+
+	let (white, black) = board.score();
+	println!("White: {}, Black: {}", white, black);
+	print!("Winner: {}" , if white > black { "White" } else if black > white { "Black" } else { "Draw" });
 }

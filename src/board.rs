@@ -81,6 +81,21 @@ impl Board {
         }
         moves
     }
+
+	pub fn score(&self) -> (usize, usize) {
+		let mut white = 0;
+		let mut black = 0;
+		for line in self.cases.iter() {
+			for case in line.iter() {
+				match case {
+					Case::White => white += 1,
+					Case::Black => black += 1,
+					Case::Empty => (),
+				}
+			}
+		}
+		(white, black)
+	}
 }
 
 impl Display for Board {
