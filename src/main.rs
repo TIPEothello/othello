@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 11:17:32
+ Last Modified: 14/03/2023 11:19:19
  Modified By: realbacon
  -----
  License  : MIT
@@ -24,6 +24,7 @@ fn main() {
     let mut board = Board::new();
     let mut turn = Case::Black;
     let mut stdout = stdout();
+    println!("");
     while board.available_moves(&turn).len() > 0 {
         println!("{}", board);
         // choose a random move within the available moves
