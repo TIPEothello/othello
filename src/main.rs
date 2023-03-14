@@ -16,6 +16,7 @@ mod rules;
 
 use board::Board;
 use board::Case;
+use rules::enemy;
 use rand::seq::SliceRandom;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind, KeyEventState};
 
