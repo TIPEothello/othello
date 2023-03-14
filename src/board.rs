@@ -10,10 +10,10 @@
  -----
 */
 
-use crate::rules::is_legal_move;
+use crate::rules::{check_direction, enemy, is_legal_move};
 use ansi_term::{Colour::*, Style};
 use std::fmt::Display;
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Case {
     Empty,
     White,
@@ -30,21 +30,45 @@ impl Board {
             cases: vec![vec![Case::Empty; 8]; 8],
         };
         board.cases[3][3] = Case::White;
-		board.cases[4][4] = Case::White;
-		board.cases[3][4] = Case::Black;
-		board.cases[4][3] = Case::Black;
+        board.cases[4][4] = Case::White;
+        board.cases[3][4] = Case::Black;
+        board.cases[4][3] = Case::Black;
         board
     }
 
-	pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
+    pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
         if !is_legal_move(&self.cases, bmove, &color) {
             return Err(());
         }
         self.cases[bmove.0][bmove.1] = color;
+
+        for direction in vec![
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (-1, 1),
+            (-1, 0),
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+        ] {
+            if check_direction(
+                &self.cases,
+                (bmove.0 as i8, bmove.1 as i8),
+                direction,
+                &color,
+            ) {
+                let mut x = bmove.0 as i8 + direction.0;
+                let mut y = bmove.1 as i8 + direction.1;
+                while self.cases[x as usize][y as usize] == enemy(&color) {
+                    self.cases[x as usize][y as usize] = color;
+                    x += direction.0;
+                    y += direction.1;
+                }
+            }
+        }
         Ok(())
     }
-
-
 
     pub fn available_moves(&self, color: Case) -> Vec<(usize, usize)> {
         let mut moves = Vec::new();

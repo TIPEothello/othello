@@ -39,7 +39,7 @@ pub fn check_direction(board: &Vec<Vec<Case>>, start: (i8, i8), direction: (i8, 
 	x >= 0 && x < 8 && y >= 0 && y < 8 && board[x as usize][y as usize] == *color && ((x - start.0).abs() > 1 || (y - start.1).abs() > 1)
 }
 
-fn enemy(color: &Case) -> Case {
+pub fn enemy(color: &Case) -> Case {
 	match color {
 		Case::White => Case::Black,
 		Case::Black => Case::White,
