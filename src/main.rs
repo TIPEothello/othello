@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 11:08:38
+ Last Modified: 14/03/2023 11:10:46
  Modified By: realbacon
  -----
  License  : MIT
@@ -12,15 +12,9 @@
 
 mod board;
 mod rules;
-<<<<<<< HEAD
 use board::{Board, Case};
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
-=======
 
-use board::Board;
-use board::Case;
-use rules::enemy;
->>>>>>> 0e8947231b62a7a80b009d05eab06e395332112f
 use rand::seq::SliceRandom;
 use rules::enemy;
 
