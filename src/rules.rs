@@ -10,7 +10,7 @@
  -----
 */
 
-use crate::board::Case;
+use crate::board::{Case, DIRECTIONS};
 
 /// Check if a move is legal
 /// # Arguments
@@ -24,17 +24,12 @@ pub fn is_legal_move(board: &Vec<Vec<Case>>, bmove: (usize, usize), color: &Case
     if board[bmove.0][bmove.1] != Case::Empty {
         return false;
     }
-	for i in -1..=1 {
-		for j in -1..=1 {
-			if i == 0 && j == 0 {
-				continue;
-			}
-			if check_direction(board, (bmove.0 as i8, bmove.1 as i8), (i, j), color) {
-				return true;
-			}
-		}
-	}
-	false
+    for direction in DIRECTIONS {
+        if check_direction(board, (bmove.0 as i8, bmove.1 as i8), direction, color) {
+            return true;
+        }
+    }
+    false
 }
 
 /// Check if a move is legal in a given direction

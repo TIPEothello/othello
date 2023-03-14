@@ -33,7 +33,7 @@ impl Display for Case {
 pub struct Board {
     cases: Vec<Vec<Case>>,
 }
-const DIRECTIONS: [(i8, i8); 8] = [
+pub const DIRECTIONS: [(i8, i8); 8] = [
     (1, 0),
     (1, 1),
     (0, 1),
