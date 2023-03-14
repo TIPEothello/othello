@@ -70,11 +70,11 @@ impl Board {
         Ok(())
     }
 
-    pub fn available_moves(&self, color: Case) -> Vec<(usize, usize)> {
+    pub fn available_moves(&self, color: &Case) -> Vec<(usize, usize)> {
         let mut moves = Vec::new();
         for i in 0..8 {
             for j in 0..8 {
-                if is_legal_move(&self.cases, (i, j), &color) {
+                if is_legal_move(&self.cases, (i, j), color) {
                     moves.push((i, j));
                 }
             }
