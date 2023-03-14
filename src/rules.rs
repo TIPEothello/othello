@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 10:58:55
+ Last Modified: 14/03/2023 11:02:15
  Modified By: realbacon
  -----
  License  : MIT
@@ -25,16 +25,17 @@ pub fn is_legal_move(board: &Vec<Vec<Case>>, bmove: (usize, usize), color: &Case
     if board[bmove.0][bmove.1] != Case::Empty {
         return false;
     }
-    let mut result = false;
     for i in -1..=1 {
         for j in -1..=1 {
             if i == 0 && j == 0 {
                 continue;
             }
-            result |= check_direction(board, (bmove.0 as i8, bmove.1 as i8), (i, j), color);
+            if check_direction(board, (bmove.0 as i8, bmove.1 as i8), (i, j), color) {
+                return true;
+            }
         }
     }
-    result
+    false
 }
 
 /// Check if a move is legal in a given direction
