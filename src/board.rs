@@ -29,11 +29,33 @@ impl Board {
         let mut board = Board {
             cases: vec![vec![Case::Empty; 8]; 8],
         };
-        board.make_move((3, 3), Case::White).unwrap();
-        board.make_move((4, 4), Case::White).unwrap();
-        board.make_move((3, 4), Case::Black).unwrap();
-        board.make_move((4, 3), Case::Black).unwrap();
+        board.cases[3][3] = Case::White;
+		board.cases[4][4] = Case::White;
+		board.cases[3][4] = Case::Black;
+		board.cases[4][3] = Case::Black;
         board
+    }
+
+	pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
+        if !is_legal_move(&self.cases, bmove, &color) {
+            return Err(());
+        }
+        self.cases[bmove.0][bmove.1] = color;
+        Ok(())
+    }
+
+
+
+    pub fn available_moves(&self, color: Case) -> Vec<(usize, usize)> {
+        let mut moves = Vec::new();
+        for i in 0..8 {
+            for j in 0..8 {
+                if is_legal_move(&self.cases, (i, j), &color) {
+                    moves.push((i, j));
+                }
+            }
+        }
+        moves
     }
 }
 
@@ -63,28 +85,6 @@ impl Display for Board {
             string += "\n";
         }
         write!(f, "{}", string)
-    }
-}
-
-impl Board {
-    pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), ()> {
-        if !is_legal_move(&self.cases, bmove, &color) {
-            return Err(());
-        }
-        self.cases[bmove.0][bmove.1] = color;
-        Ok(())
-    }
-
-    pub fn available_moves(&self, color: Case) -> Vec<(usize, usize)> {
-        let mut moves = Vec::new();
-        for i in 0..8 {
-            for j in 0..8 {
-                if is_legal_move(&self.cases, (i, j), &color) {
-                    moves.push((i, j));
-                }
-            }
-        }
-        moves
     }
 }
 
