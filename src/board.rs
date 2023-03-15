@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 14/03/2023 10:57:38
+ Last Modified: 15/03/2023 03:38:6
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,7 +11,7 @@
 */
 
 use crate::rules::{check_direction, enemy, is_legal_move};
-use ansi_term::{Colour::*, Style};
+use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Case {
@@ -21,13 +21,13 @@ pub enum Case {
 }
 
 impl Display for Case {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Case::Empty => write!(f, "Empty"),
-			Case::White => write!(f, "White"),
-			Case::Black => write!(f, "Black"),
-		}
-	}
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Case::Empty => write!(f, "Empty"),
+            Case::White => write!(f, "White"),
+            Case::Black => write!(f, "Black"),
+        }
+    }
 }
 
 pub struct Board {
@@ -121,27 +121,55 @@ impl Board {
 
 impl Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut string = String::new();
-        for line in self.cases.iter() {
+        fn change_color(bg: &mut u8) -> Colour {
+            if bg == &1 {
+                *bg = 0;
+                RGB(15, 117, 70)
+            } else {
+                *bg = 1;
+                RGB(17, 153, 90)
+            }
+        }
+        let mut string = String::from(" a  b  c  d  e  f  g  h \n");
+        let mut bg: u8 = 0;
+        for (i, line) in self.cases.iter().enumerate() {
+            string.push_str(&format!("{} ", i)[..]);
             for case in line.iter() {
                 match case {
                     Case::Empty => {
                         string.push_str(
                             Style::new()
-                                .on(RGB(150, 150, 150))
-                                .paint("ㅤ")
+                                .on(change_color(&mut bg))
+                                .paint("ㅤ ")
                                 .to_string()
                                 .as_str(),
                         );
                     }
                     Case::White => {
-                        string.push_str(Style::new().on(White).paint("ㅤ").to_string().as_str());
+                        string.push_str(
+                            Style::new()
+                                .on(change_color(&mut bg))
+                                .bold()
+                                .fg(RGB(255, 255, 255))
+                                .paint(" • ")
+                                .to_string()
+                                .as_str(),
+                        );
                     }
                     Case::Black => {
-                        string.push_str(Style::new().on(Black).paint("ㅤ").to_string().as_str());
+                        string.push_str(
+                            Style::new()
+                                .on(change_color(&mut bg))
+                                .bold()
+                                .fg(RGB(0, 0, 0))
+                                .paint(" • ")
+                                .to_string()
+                                .as_str(),
+                        );
                     }
                 }
             }
+            change_color(&mut bg);
             string += "\n";
         }
         write!(f, "{}", string)
@@ -151,10 +179,12 @@ impl Display for Board {
 #[test]
 fn make_move_test() {
     let mut board = Board::new();
-    board.make_move((0, 0), Case::White).expect_err("Move should not be legal");
+    board
+        .make_move((0, 0), Case::White)
+        .expect_err("Move should not be legal");
     assert_eq!(board.cases[0][0], Case::Empty); // Check that the move was not made
-	// Check the initial board
-    assert_eq!(board.cases[3][3], Case::White); 
+                                                // Check the initial board
+    assert_eq!(board.cases[3][3], Case::White);
     assert_eq!(board.cases[4][4], Case::White);
     assert_eq!(board.cases[3][4], Case::Black);
     assert_eq!(board.cases[4][3], Case::Black);
