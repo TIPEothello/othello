@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 15/03/2023 03:36:1
+ Last Modified: 15/03/2023 03:39:24
  Modified By: realbacon
  -----
  License  : MIT
@@ -20,14 +20,14 @@ use rules::enemy;
 use std::io::stdout;
 
 fn main() {
-	let is_win = cfg!(windows);
-	println!("Running on Windows: {}", is_win);
-	println!("Welcome to Reversi (Othello)! - Rust Edition");
+    let is_win = cfg!(windows);
+    println!("Running on Windows: {}", is_win);
+    println!("Welcome to Reversi (Othello)! - Rust Edition");
     let mut rng = rand::thread_rng();
     let mut board = Board::new();
     let mut turn = Case::Black;
     let mut stdout = stdout();
-	let mut quit = false;
+    let mut quit = false;
     println!("");
     while board.available_moves(&turn).len() > 0 {
         println!("{}", board);
@@ -46,27 +46,27 @@ fn main() {
                     state: KeyEventState::NONE,
                 }) => break,
                 Event::Key(KeyEvent {
-					code: KeyCode::Char('q'),
-					modifiers: KeyModifiers::NONE,
-					kind: KeyEventKind::Press,
-					state: KeyEventState::NONE,
-				}) => {
-					quit = true;
-					break;
-				}
-				_ => {}
+                    code: KeyCode::Char('q'),
+                    modifiers: KeyModifiers::NONE,
+                    kind: KeyEventKind::Press,
+                    state: KeyEventState::NONE,
+                }) => {
+                    quit = true;
+                    break;
+                }
+                _ => {}
             }
         }
-		if quit {
-			break;
-		}
-        stdout.queue(MoveUp(if is_win {9} else {10})).unwrap();
+        if quit {
+            break;
+        }
+        stdout.queue(MoveUp(if is_win { 10 } else { 11 })).unwrap();
     }
 
-	if quit {
-		println!("Quitting...");
-		return;
-	}
+    if quit {
+        println!("Quitting...");
+        return;
+    }
 
     println!("{}", board);
     stdout.queue(MoveDown(10)).unwrap();
