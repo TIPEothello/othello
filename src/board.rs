@@ -10,7 +10,7 @@
  -----
 */
 
-use crate::rules::{check_direction, enemy, is_legal_move};
+use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -64,11 +64,11 @@ impl Board {
     /// # Returns
     /// * `Ok(())` if the move is legal
     /// * `Err(())` if the move is illegal
-    pub fn make_move(&mut self, bmove: (usize, usize), color: Case) -> Result<(), &str> {
+    pub fn make_move(&mut self, bmove: (usize, usize), color: &Case) -> Result<(), &str> {
         if !is_legal_move(&self.cases, bmove, &color) {
             return Err("Illegal move");
         }
-        self.cases[bmove.0][bmove.1] = color;
+        self.cases[bmove.0][bmove.1] = *color;
 
         for direction in DIRECTIONS {
             if check_direction(
@@ -79,8 +79,8 @@ impl Board {
             ) {
                 let mut x = bmove.0 as i8 + direction.0;
                 let mut y = bmove.1 as i8 + direction.1;
-                while self.cases[x as usize][y as usize] == enemy(&color) {
-                    self.cases[x as usize][y as usize] = color;
+                while self.cases[x as usize][y as usize] == enemy(color) {
+                    self.cases[x as usize][y as usize] = *color;
                     x += direction.0;
                     y += direction.1;
                 }
@@ -88,6 +88,23 @@ impl Board {
         }
         Ok(())
     }
+
+	pub fn make_move_with_highest_gain(&mut self, color: &Case) -> Result<(), &str> {
+		let moves = self.available_moves_with_gain(&color);
+		if moves.len() == 0 {
+			return Err("No moves available");
+		}
+		let mut highest_gain = 0;
+		let mut highest_move = (0, 0);
+		for (m, g) in moves {
+			if g > highest_gain {
+				highest_gain = g;
+				highest_move = m;
+			}
+		}
+		self.make_move(highest_move, color)
+	}
+
     /// Returns a vector of all the available moves for a given color
     /// # Arguments
     /// * `color` - The color of the player
@@ -102,6 +119,20 @@ impl Board {
         }
         moves
     }
+
+	pub fn available_moves_with_gain(&self, color: &Case) -> Vec<((usize, usize), usize)> {
+		let mut moves = Vec::new();
+		for i in 0..8 {
+			for j in 0..8 {
+				let (legal, gain) = is_legal_move_with_gain(&self.cases, (i, j), color);
+				if legal {
+					moves.push(((i, j), gain));
+				}
+			}
+		}
+		moves
+	}
+
     /// Returns the score of the board
     pub fn score(&self) -> (usize, usize) {
         let mut white = 0;
@@ -180,7 +211,7 @@ impl Display for Board {
 fn make_move_test() {
     let mut board = Board::new();
     board
-        .make_move((0, 0), Case::White)
+        .make_move((0, 0), &Case::White)
         .expect_err("Move should not be legal");
     assert_eq!(board.cases[0][0], Case::Empty); // Check that the move was not made
                                                 // Check the initial board

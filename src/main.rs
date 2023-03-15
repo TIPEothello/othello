@@ -31,9 +31,19 @@ fn main() {
     println!("");
     while board.available_moves(&turn).len() > 0 {
         println!("{}", board);
+
+        match turn {
+            Case::White => {
+                let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
+                board.make_move(bmove, &turn).unwrap();
+            }
+            Case::Black => {
+                board.make_move_with_highest_gain(&turn).unwrap();
+            },
+			_ => {}
+        }
         // choose a random move within the available moves
-        let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
-        board.make_move(bmove, turn).unwrap();
+
         turn = enemy(&turn);
         // Wait for user to press enter
 

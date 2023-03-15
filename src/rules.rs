@@ -32,6 +32,20 @@ pub fn is_legal_move(board: &Vec<Vec<Case>>, bmove: (usize, usize), color: &Case
     false
 }
 
+pub fn is_legal_move_with_gain(board: &Vec<Vec<Case>>, bmove: (usize, usize), color: &Case) -> (bool, usize) {
+	if board[bmove.0][bmove.1] != Case::Empty {
+		return (false, 0);
+	}
+	let mut gain = 0;
+	for direction in DIRECTIONS {
+		let (is_legal, direction_gain) = check_direction_with_gain(board, (bmove.0 as i8, bmove.1 as i8), direction, color);
+		if is_legal {
+			gain += direction_gain;
+		}
+	}
+	(gain > 0, gain)
+}
+
 /// Check if a move is legal in a given direction
 /// # Arguments
 /// * `board` - The board
@@ -59,6 +73,31 @@ pub fn check_direction(
         && y < 8
         && board[x as usize][y as usize] == *color
         && ((x - start.0).abs() > 1 || (y - start.1).abs() > 1)
+}
+
+pub fn check_direction_with_gain(
+	board: &Vec<Vec<Case>>,
+	start: (i8, i8),
+	direction: (i8, i8),
+	color: &Case,
+) -> (bool, usize) {
+	let mut x = start.0 + direction.0;
+	let mut y = start.1 + direction.1;
+	let mut gain = 0;
+	while x >= 0 && x < 8 && y >= 0 && y < 8 && board[x as usize][y as usize] == enemy(color) {
+		x += direction.0;
+		y += direction.1;
+		gain += 1;
+	}
+	(
+		x >= 0
+			&& x < 8
+			&& y >= 0
+			&& y < 8
+			&& board[x as usize][y as usize] == *color
+			&& ((x - start.0).abs() > 1 || (y - start.1).abs() > 1),
+		gain,
+	)
 }
 
 pub fn enemy(color: &Case) -> Case {
