@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 15/03/2023 03:41:35
+ Last Modified: 15/03/2023 03:44:8
  Modified By: realbacon
  -----
  License  : MIT
@@ -164,7 +164,7 @@ impl Display for Board {
         let mut string = String::from("   a  b  c  d  e  f  g  h \n");
         let mut bg: u8 = 0;
         for (i, line) in self.cases.iter().enumerate() {
-            string.push_str(&format!("{} ", i)[..]);
+            string.push_str(&format!("{} ", i + 1)[..]);
             for case in line.iter() {
                 match case {
                     Case::Empty => {
