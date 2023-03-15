@@ -3,7 +3,7 @@
  Created Date: 14 Mar 2023
  Author: realbacon
  -----
- Last Modified: 15/03/2023 03:39:42
+ Last Modified: 15/03/2023 03:41:35
  Modified By: realbacon
  -----
  License  : MIT
@@ -151,7 +151,7 @@ impl Display for Board {
                                 .on(change_color(&mut bg))
                                 .bold()
                                 .fg(RGB(255, 255, 255))
-                                .paint(" • ")
+                                .paint(" ⬤ ")
                                 .to_string()
                                 .as_str(),
                         );
@@ -162,7 +162,7 @@ impl Display for Board {
                                 .on(change_color(&mut bg))
                                 .bold()
                                 .fg(RGB(0, 0, 0))
-                                .paint(" • ")
+                                .paint(" ⬤ ")
                                 .to_string()
                                 .as_str(),
                         );
