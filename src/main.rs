@@ -1,15 +1,3 @@
-/*
- File: main.rs
- Created Date: 14 Mar 2023
- Author: realbacon
- -----
- Last Modified: 15/03/2023 03:39:24
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
-
 mod board;
 mod rules;
 use board::{Board, Case};
@@ -129,7 +117,8 @@ fn play_games(n: u32) -> (u32, u32, u32) {
 }
 
 fn main() {
-	let (white_wins, black_wins, draws) = play_games(15000);
+	/*let (white_wins, black_wins, draws) = play_games(15000);
 	println!("White wins: {}, Black wins: {}, Draws: {}", white_wins, black_wins, draws);
-	println!("Efficiency: {}", (black_wins as f32) / (white_wins + black_wins + draws) as f32);
+	println!("Efficiency: {}%", (black_wins as f32) * 100.0 / (white_wins + black_wins + draws) as f32);*/
+	progressive_play();
 }

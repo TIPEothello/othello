@@ -1,15 +1,3 @@
-/*
- File: board.rs
- Created Date: 14 Mar 2023
- Author: realbacon
- -----
- Last Modified: 15/03/2023 03:44:8
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
-
 use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
