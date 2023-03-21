@@ -3,13 +3,12 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 21/03/2023 01:55:45
+ Last Modified: 21/03/2023 03:21:5
  Modified By: realbacon
  -----
  License  : MIT
  -----
 */
-
 
 use std::io::stdout;
 
@@ -61,20 +60,20 @@ impl Player {
             match self.strategy {
                 Strategy::Random => {
                     let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
-                    board.make_move(bmove, &turn).unwrap();
+                    board.make_move(&bmove).unwrap();
                 }
                 Strategy::Mixed => match turn {
                     Case::White => {
                         let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
-                        board.make_move(bmove, &turn).unwrap();
+                        board.make_move(&bmove).unwrap();
                     }
                     Case::Black => {
-                        board.make_move_with_highest_gain(&turn).unwrap();
+                        board.make_move_with_highest_gain().unwrap();
                     }
                     _ => {}
                 },
                 Strategy::Greedy => {
-                    board.make_move_with_highest_gain(&turn).unwrap();
+                    board.make_move_with_highest_gain().unwrap();
                 }
             }
             // choose a random move within the available moves
@@ -141,20 +140,20 @@ impl Player {
                 match self.strategy {
                     Strategy::Random => {
                         let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
-                        board.make_move(bmove, &turn).unwrap();
+                        board.make_move(&bmove).unwrap();
                     }
                     Strategy::Mixed => match turn {
                         Case::White => {
                             let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
-                            board.make_move(bmove, &turn).unwrap();
+                            board.make_move(&bmove).unwrap();
                         }
                         Case::Black => {
-                            board.make_move_with_highest_gain(&turn).unwrap();
+                            board.make_move_with_highest_gain().unwrap();
                         }
                         _ => {}
                     },
                     Strategy::Greedy => {
-                        board.make_move_with_highest_gain(&turn).unwrap();
+                        board.make_move_with_highest_gain().unwrap();
                     }
                 }
                 turn = enemy(&turn);
