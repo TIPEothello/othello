@@ -53,7 +53,7 @@ impl Board {
     /// * `Ok(())` if the move is legal
     /// * `Err(())` if the move is illegal
     pub fn make_move(&mut self, bmove: (usize, usize), color: &Case) -> Result<(), &str> {
-        if !is_legal_move(&self.cases, bmove, &color) {
+        if !is_legal_move(&self.cases, bmove, color) {
             return Err("Illegal move");
         }
         self.cases[bmove.0][bmove.1] = *color;
@@ -63,7 +63,7 @@ impl Board {
                 &self.cases,
                 (bmove.0 as i8, bmove.1 as i8),
                 direction,
-                &color,
+                color,
             ) {
                 let mut x = bmove.0 as i8 + direction.0;
                 let mut y = bmove.1 as i8 + direction.1;
@@ -78,8 +78,8 @@ impl Board {
     }
 
 	pub fn make_move_with_highest_gain(&mut self, color: &Case) -> Result<(), &str> {
-		let moves = self.available_moves_with_gain(&color);
-		if moves.len() == 0 {
+		let moves = self.available_moves_with_gain(color);
+		if moves.is_empty() {
 			return Err("No moves available");
 		}
 		let mut highest_gain = 0;

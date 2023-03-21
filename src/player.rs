@@ -55,7 +55,7 @@ impl Player {
         let mut stdout = stdout();
         let mut quit = false;
         println!();
-        while board.available_moves(&turn).len() > 0 {
+        while !board.available_moves(&turn).is_empty() {
             println!("{}", board);
 
             match self.strategy {
@@ -137,7 +137,7 @@ impl Player {
         for _ in 0..n {
             let mut board = Board::new();
             let mut turn = Case::Black;
-            while board.available_moves(&turn).len() > 0 {
+            while !board.available_moves(&turn).is_empty() {
                 match self.strategy {
                     Strategy::Random => {
                         let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();

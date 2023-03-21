@@ -51,14 +51,12 @@ pub fn check_direction(
 ) -> bool {
     let mut x = start.0 + direction.0;
     let mut y = start.1 + direction.1;
-    while x >= 0 && x < 8 && y >= 0 && y < 8 && board[x as usize][y as usize] == enemy(color) {
+    while (0..8).contains(&x) && (0..8).contains(&y) && board[x as usize][y as usize] == enemy(color) {
         x += direction.0;
         y += direction.1;
     }
-    x >= 0
-        && x < 8
-        && y >= 0
-        && y < 8
+    (0..8).contains(&x)
+        && (0..8).contains(&y)
         && board[x as usize][y as usize] == *color
         && ((x - start.0).abs() > 1 || (y - start.1).abs() > 1)
 }
@@ -72,16 +70,14 @@ pub fn check_direction_with_gain(
 	let mut x = start.0 + direction.0;
 	let mut y = start.1 + direction.1;
 	let mut gain = 0;
-	while x >= 0 && x < 8 && y >= 0 && y < 8 && board[x as usize][y as usize] == enemy(color) {
+	while (0..8).contains(&x) && (0..8).contains(&y) && board[x as usize][y as usize] == enemy(color) {
 		x += direction.0;
 		y += direction.1;
 		gain += 1;
 	}
 	(
-		x >= 0
-			&& x < 8
-			&& y >= 0
-			&& y < 8
+		(0..8).contains(&x)
+			&& (0..8).contains(&y)
 			&& board[x as usize][y as usize] == *color
 			&& ((x - start.0).abs() > 1 || (y - start.1).abs() > 1),
 		gain,
