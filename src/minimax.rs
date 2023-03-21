@@ -9,6 +9,7 @@
  License  : MIT
  -----
 */
+#![allow(dead_code)]
 
 use crate::board::{Board, Case};
 use crate::rules::enemy;

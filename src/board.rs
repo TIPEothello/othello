@@ -9,6 +9,7 @@
  License  : MIT
  -----
 */
+#![allow(dead_code)]
 
 use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
@@ -32,7 +33,7 @@ impl Display for Case {
 
 #[derive(Clone, Debug)]
 pub struct Board {
-    pub cases: Vec<Vec<Case>>,
+    pub cases: [[Case; 8]; 8],
     pub history: Vec<(usize, usize)>,
 }
 pub const DIRECTIONS: [(i8, i8); 8] = [
@@ -51,7 +52,7 @@ impl Board {
     /// * A new board
     pub fn new() -> Self {
         let mut board = Board {
-            cases: vec![vec![Case::Empty; 8]; 8],
+            cases: [[Case::Empty; 8]; 8],
             history: Vec::new(),
         };
         board.cases[3][3] = Case::White;
@@ -105,8 +106,7 @@ impl Board {
     }
 
     pub fn make_move_with_highest_gain(&mut self) -> Result<(), &str> {
-        let color = self.get_turn();
-        let moves = self.available_moves_with_gain(&color);
+        let moves = self.available_moves_with_gain();
         if moves.is_empty() {
             return Err("No moves available");
         }
@@ -136,11 +136,12 @@ impl Board {
         moves
     }
 
-    pub fn available_moves_with_gain(&self, color: &Case) -> Vec<((usize, usize), usize)> {
+    pub fn available_moves_with_gain(&self) -> Vec<((usize, usize), usize)> {
         let mut moves = Vec::new();
+        let color = self.get_turn();
         for i in 0..8 {
             for j in 0..8 {
-                let (legal, gain) = is_legal_move_with_gain(&self.cases, (i, j), color);
+                let (legal, gain) = is_legal_move_with_gain(&self.cases, (i, j), &color);
                 if legal {
                     moves.push(((i, j), gain));
                 }
@@ -166,7 +167,7 @@ impl Board {
     }
 
     pub fn reset(&mut self, num: usize) {
-        self.cases = vec![vec![Case::Empty; 8]; 8];
+        self.cases = [[Case::Empty; 8]; 8];
         self.cases[3][3] = Case::White;
         self.cases[4][4] = Case::White;
         self.cases[3][4] = Case::Black;
@@ -180,7 +181,7 @@ impl Board {
         self.play_moves(&moves).unwrap();
     }
 
-    pub fn play_moves(&mut self, moves: &Vec<(usize, usize)>) -> Result<(), &str> {
+    pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<(), &str> {
         for m in moves.iter() {
             self.make_move(m).unwrap();
         }

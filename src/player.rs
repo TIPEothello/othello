@@ -9,7 +9,9 @@
  License  : MIT
  -----
 */
+#![allow(dead_code)]
 
+use std::cmp::Ordering;
 use std::io::stdout;
 
 use crossterm::cursor::{MoveDown, MoveUp};
@@ -118,12 +120,16 @@ impl Player {
         println!("White: {}, Black: {}", white, black);
         println!(
             "Winner: {}",
-            if white > black {
-                "White"
-            } else if black > white {
-                "Black"
-            } else {
-                "Draw"
+            match white.cmp(&black) {
+                Ordering::Greater => {
+                    "White"
+                }
+                Ordering::Less => {
+                    "Black"
+                }
+                Ordering::Equal => {
+                    "Draw"
+                }
             }
         );
     }
@@ -159,12 +165,16 @@ impl Player {
                 turn = enemy(&turn);
             }
             let (white, black) = board.score();
-            if white > black {
-                white_wins += 1;
-            } else if black > white {
-                black_wins += 1;
-            } else {
-                draws += 1;
+            match white.cmp(&black) {
+                Ordering::Equal => {
+                    draws += 1;
+                }
+                Ordering::Greater => {
+                    white_wins += 1;
+                }
+                Ordering::Less => {
+                    black_wins += 1;
+                }
             }
         }
         (white_wins, black_wins, draws)

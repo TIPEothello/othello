@@ -17,11 +17,14 @@ mod rules;
 
 use player::{Player, Strategy};
 fn main() {
+    let mut player = Player::new(Some(Strategy::Mixed));
+    player.play_games(100000);
+    print!("done");
+    /*let mut turn = board::Case::Black;
     let mut board = board::Board::new();
-    let mut turn = board::Case::Black;
     use crate::minimax::calculate_outcomes;
     let a = calculate_outcomes(&board, &turn, 3);
     for b in a.iter() {
         println!("{:?}", b);
-    }
+    }*/
 }
