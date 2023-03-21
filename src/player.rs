@@ -1,3 +1,16 @@
+/*
+ File: player.rs
+ Created Date: 21 Mar 2023
+ Author: realbacon
+ -----
+ Last Modified: 21/03/2023 01:55:45
+ Modified By: realbacon
+ -----
+ License  : MIT
+ -----
+*/
+
+
 use std::io::stdout;
 
 use crossterm::cursor::{MoveDown, MoveUp};
@@ -41,7 +54,7 @@ impl Player {
         let mut turn = Case::Black;
         let mut stdout = stdout();
         let mut quit = false;
-        println!("");
+        println!();
         while board.available_moves(&turn).len() > 0 {
             println!("{}", board);
 
