@@ -124,7 +124,9 @@ impl Board {
     /// Returns a vector of all the available moves for a given color
     /// # Arguments
     /// * `color` - The color of the player
-    pub fn available_moves(&self, color: &Case) -> Vec<(usize, usize)> {
+    pub fn available_moves(&self, color: Option<&Case>) -> Vec<(usize, usize)> {
+		let current_color = self.get_turn();
+		let color = color.unwrap_or(&current_color);
         let mut moves = Vec::new();
         for i in 0..8 {
             for j in 0..8 {

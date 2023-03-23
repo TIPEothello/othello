@@ -56,17 +56,17 @@ impl Player {
         let mut stdout = stdout();
         let mut quit = false;
         println!();
-        while !board.available_moves(&turn).is_empty() {
+        while !board.available_moves(Some(&turn)).is_empty() {
             println!("{}", board);
 
             match self.strategy {
                 Strategy::Random => {
-                    let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
+                    let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
                 }
                 Strategy::Mixed => match turn {
                     Case::White => {
-                        let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
+                        let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
                         board.make_move(&bmove).unwrap();
                     }
                     Case::Black => {
@@ -142,15 +142,15 @@ impl Player {
         for _ in 0..n {
             let mut board = Board::new();
             let mut turn = Case::Black;
-            while !board.available_moves(&turn).is_empty() {
+            while !board.available_moves(Some(&turn)).is_empty() {
                 match self.strategy {
                     Strategy::Random => {
-                        let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
+                        let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
                         board.make_move(&bmove).unwrap();
                     }
                     Strategy::Mixed => match turn {
                         Case::White => {
-                            let bmove = *board.available_moves(&turn).choose(&mut rng).unwrap();
+                            let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
                             board.make_move(&bmove).unwrap();
                         }
                         Case::Black => {
