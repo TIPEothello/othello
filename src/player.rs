@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 21/03/2023 03:21:5
+ Last Modified: 2/04/2023 12:18:30
  Modified By: realbacon
  -----
  License  : MIT
@@ -56,17 +56,17 @@ impl Player {
         let mut stdout = stdout();
         let mut quit = false;
         println!();
-        while !board.available_moves(Some(&turn)).is_empty() {
+        while !board.available_moves(Some(turn)).is_empty() {
             println!("{}", board);
 
             match self.strategy {
                 Strategy::Random => {
-                    let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
+                    let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
                 }
                 Strategy::Mixed => match turn {
                     Case::White => {
-                        let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
+                        let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
                         board.make_move(&bmove).unwrap();
                     }
                     Case::Black => {
@@ -142,15 +142,16 @@ impl Player {
         for _ in 0..n {
             let mut board = Board::new();
             let mut turn = Case::Black;
-            while !board.available_moves(Some(&turn)).is_empty() {
+            while !board.available_moves(Some(turn)).is_empty() {
                 match self.strategy {
                     Strategy::Random => {
-                        let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
+                        let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
                         board.make_move(&bmove).unwrap();
                     }
                     Strategy::Mixed => match turn {
                         Case::White => {
-                            let bmove = *board.available_moves(Some(&turn)).choose(&mut rng).unwrap();
+                            let bmove =
+                                *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
                             board.make_move(&bmove).unwrap();
                         }
                         Case::Black => {

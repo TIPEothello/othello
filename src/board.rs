@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 21/03/2023 03:20:22
+ Last Modified: 2/04/2023 01:01:26
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,7 +11,10 @@
 */
 #![allow(dead_code)]
 
-use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
+use crate::{
+    board,
+    rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain},
+};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -124,13 +127,13 @@ impl Board {
     /// Returns a vector of all the available moves for a given color
     /// # Arguments
     /// * `color` - The color of the player
-    pub fn available_moves(&self, color: Option<&Case>) -> Vec<(usize, usize)> {
-		let current_color = self.get_turn();
-		let color = color.unwrap_or(&current_color);
+    pub fn available_moves(&self, color: Option<Case>) -> Vec<(usize, usize)> {
+        let current_color = self.get_turn();
+        let color = color.unwrap_or(current_color);
         let mut moves = Vec::new();
         for i in 0..8 {
             for j in 0..8 {
-                if is_legal_move(&self.cases, (i, j), color) {
+                if is_legal_move(&self.cases, (i, j), &color) {
                     moves.push((i, j));
                 }
             }
@@ -175,17 +178,20 @@ impl Board {
         self.cases[3][4] = Case::Black;
         self.cases[4][3] = Case::Black;
         // Remove the last num moves
-
         self.history.truncate(self.history.len() - num);
 
         let moves = self.history.clone();
-
+        self.history.clear();
         self.play_moves(&moves).unwrap();
     }
 
     pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<(), &str> {
         for m in moves.iter() {
-            self.make_move(m).unwrap();
+            let mover = self.make_move(m);
+            if mover.is_err() {
+                println!("Error: {:?} \n{}", moves, self);
+                panic!("");
+            }
         }
         Ok(())
     }
@@ -261,4 +267,25 @@ fn make_move_test() {
     assert_eq!(board.cases[3][4], Case::Black);
     assert_eq!(board.cases[4][3], Case::Black);
     println!("{}", board);
+}
+
+pub struct Move {
+    pub move_: (usize, usize),
+}
+
+impl Move {
+    pub fn new(move_: (usize, usize)) -> Self {
+        Self { move_ }
+    }
+}
+
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}{}",
+            self.move_.1 + 1,
+            (self.move_.0 as u8 + 97) as char,
+        )
+    }
 }
