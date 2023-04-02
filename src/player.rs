@@ -20,24 +20,25 @@ use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
 
 use crate::board::{Board, Case};
+use crate::minimax;
 use crate::rules::enemy;
 
 pub enum Strategy {
     Random,
-    Mixed,
     Greedy,
+    Minimax { depth: i8 },
 }
 
 pub struct Player {
     board: Board,
-    strategy: Strategy,
+    strategy: (Strategy, Strategy),
 }
 
 impl Player {
-    pub fn new(strategy: Option<Strategy>) -> Player {
+    pub fn new(strategy: Option<(Strategy, Strategy)>) -> Player {
         let strategy = match strategy {
             Some(s) => s,
-            None => Strategy::Random,
+            None => (Strategy::Random, Strategy::Random),
         };
 
         Player {
@@ -52,35 +53,32 @@ impl Player {
         println!("Welcome to Reversi (Othello)! - Rust Edition");
         let mut rng = rand::thread_rng();
         let mut board = Board::new();
-        let mut turn = Case::Black;
         let mut stdout = stdout();
         let mut quit = false;
         println!();
-        while !board.available_moves(Some(turn)).is_empty() {
+        while !board.available_moves(None).is_empty() {
             println!("{}", board);
-
-            match self.strategy {
+            let strategy = match board.get_turn() {
+                Case::White => &self.strategy.1,
+                Case::Black => &self.strategy.0,
+                Case::Empty => {
+                    panic!("Empty case is not a valid turn");
+                }
+            };
+            match strategy {
                 Strategy::Random => {
-                    let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
+                    let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
                 }
-                Strategy::Mixed => match turn {
-                    Case::White => {
-                        let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
-                        board.make_move(&bmove).unwrap();
-                    }
-                    Case::Black => {
-                        board.make_move_with_highest_gain().unwrap();
-                    }
-                    _ => {}
-                },
                 Strategy::Greedy => {
                     board.make_move_with_highest_gain().unwrap();
                 }
+                Strategy::Minimax { depth } => {
+                    let outcomes = minimax::calculate_outcomes(&board, *depth);
+                    let best_move = minimax::minimax(&outcomes, &mut board);
+                    board.make_move(&best_move).unwrap();
+                }
             }
-            // choose a random move within the available moves
-
-            turn = enemy(&turn);
             // Wait for user to press enter
 
             loop {
@@ -141,29 +139,31 @@ impl Player {
         let mut draws = 0;
         for _ in 0..n {
             let mut board = Board::new();
-            let mut turn = Case::Black;
-            while !board.available_moves(Some(turn)).is_empty() {
-                match self.strategy {
-                    Strategy::Random => {
-                        let bmove = *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
-                        board.make_move(&bmove).unwrap();
+            while !board.available_moves(None).is_empty() {
+                let strategy = match board.get_turn() {
+                    Case::White => &self.strategy.1,
+                    Case::Black => &self.strategy.0,
+                    Case::Empty => {
+                        panic!("Empty case is not a valid turn");
                     }
-                    Strategy::Mixed => match turn {
-                        Case::White => {
-                            let bmove =
-                                *board.available_moves(Some(turn)).choose(&mut rng).unwrap();
-                            board.make_move(&bmove).unwrap();
-                        }
-                        Case::Black => {
-                            board.make_move_with_highest_gain().unwrap();
-                        }
-                        _ => {}
+                };
+                match strategy {
+                    Strategy::Random => {
+                        let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
+                        board.make_move(&bmove).unwrap();
                     },
                     Strategy::Greedy => {
                         board.make_move_with_highest_gain().unwrap();
                     }
+                    Strategy::Minimax { depth } => {
+						println!("{}", board.history.len());
+                        let outcomes = minimax::calculate_outcomes(&board, *depth);
+						println!("{}", board.history.len());
+                        let best_move = minimax::minimax(&outcomes, &mut board);
+						println!("{}", board.history.len());
+                        board.make_move(&best_move).unwrap();
+                    }
                 }
-                turn = enemy(&turn);
             }
             let (white, black) = board.score();
             match white.cmp(&black) {
@@ -178,6 +178,6 @@ impl Player {
                 }
             }
         }
-        (white_wins, black_wins, draws)
+        (black_wins, white_wins, draws)
     }
 }

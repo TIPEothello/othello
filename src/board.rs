@@ -12,7 +12,6 @@
 #![allow(dead_code)]
 
 use crate::{
-    board,
     rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain},
 };
 use ansi_term::{Colour, Colour::*, Style};
