@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 2/04/2023 01:01:26
+ Last Modified: 4/04/2023 02:11:34
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,9 +11,7 @@
 */
 #![allow(dead_code)]
 
-use crate::{
-    rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain},
-};
+use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
 #[derive(Clone, Copy, Debug, PartialEq)]

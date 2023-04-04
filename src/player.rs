@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 2/04/2023 12:18:30
+ Last Modified: 4/04/2023 02:19:13
  Modified By: realbacon
  -----
  License  : MIT
@@ -14,15 +14,13 @@
 use std::cmp::Ordering;
 use std::io::stdout;
 
+use crate::board::{Board, Case};
+use crate::minimax;
 use crossterm::cursor::{MoveDown, MoveUp};
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
-
-use crate::board::{Board, Case};
-use crate::minimax;
-use crate::rules::enemy;
-
+#[derive(Debug, Clone, Copy)]
 pub enum Strategy {
     Random,
     Greedy,
@@ -132,52 +130,64 @@ impl Player {
         );
     }
 
-    pub fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
-        let mut rng = rand::thread_rng();
-        let mut white_wins = 0;
-        let mut black_wins = 0;
-        let mut draws = 0;
+    pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
+        use rand::rngs::OsRng;
+        use tokio::task::spawn;
+        use tracing::{event, span, Level};
+        let mut games_result = (0, 0, 0); // White Black Draw
+                                          // 1 for white, 0 for black, 2 for draw
+
+        let mut game_handler = Vec::new();
+        let strat = self.strategy.clone();
+        let mut rng = OsRng::default();
         for _ in 0..n {
-            let mut board = Board::new();
-            while !board.available_moves(None).is_empty() {
-                let strategy = match board.get_turn() {
-                    Case::White => &self.strategy.1,
-                    Case::Black => &self.strategy.0,
-                    Case::Empty => {
-                        panic!("Empty case is not a valid turn");
-                    }
-                };
-                match strategy {
-                    Strategy::Random => {
-                        let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
-                        board.make_move(&bmove).unwrap();
-                    },
-                    Strategy::Greedy => {
-                        board.make_move_with_highest_gain().unwrap();
-                    }
-                    Strategy::Minimax { depth } => {
-						println!("{}", board.history.len());
-                        let outcomes = minimax::calculate_outcomes(&board, *depth);
-						println!("{}", board.history.len());
-                        let best_move = minimax::minimax(&outcomes, &mut board);
-						println!("{}", board.history.len());
-                        board.make_move(&best_move).unwrap();
+            let game_thread = spawn(async move {
+                let mut board = Board::new();
+                event!(Level::INFO, "inside my_function!");
+                while !board.available_moves(None).is_empty() {
+                    let strategy = match board.get_turn() {
+                        Case::White => strat.1,
+                        Case::Black => strat.0,
+                        Case::Empty => {
+                            panic!("Empty case is not a valid turn");
+                        }
+                    };
+                    match strategy {
+                        Strategy::Random => {
+                            let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
+                            board.make_move(&bmove).unwrap();
+                        }
+                        Strategy::Greedy => {
+                            board.make_move_with_highest_gain().unwrap();
+                        }
+                        Strategy::Minimax { depth } => {
+                            let outcomes = minimax::calculate_outcomes(&board, depth);
+                            if outcomes.len() == 0 {
+                                break;
+                            }
+                            let best_move = minimax::minimax(&outcomes, &mut board);
+                            board.make_move(&best_move).unwrap();
+                        }
                     }
                 }
-            }
-            let (white, black) = board.score();
+                board.score()
+            });
+            game_handler.push(game_thread.await);
+        }
+        for game in game_handler {
+            let (white, black) = game.unwrap();
             match white.cmp(&black) {
                 Ordering::Equal => {
-                    draws += 1;
+                    games_result.2 += 1;
                 }
                 Ordering::Greater => {
-                    white_wins += 1;
+                    games_result.0 += 1;
                 }
                 Ordering::Less => {
-                    black_wins += 1;
+                    games_result.1 += 1;
                 }
             }
         }
-        (black_wins, white_wins, draws)
+        games_result
     }
 }
