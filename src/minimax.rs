@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 4/04/2023 02:16:42
+ Last Modified: 11/04/2023 01:22:23
  Modified By: realbacon
  -----
  License  : MIT
@@ -61,8 +61,6 @@ impl Display for Tree {
     }
 }
 
-
-
 /// A function  that takes a board and a turn and returns a vector of all possible outcomes
 /// # Arguments
 /// * `board` - The board to calculate the outcomes from
@@ -106,23 +104,23 @@ pub fn calculate_outcomes(board: &Board, depth: i8) -> Vec<Vec<(usize, usize)>> 
 
     outcomes
 }
-
+const FACTOR: f32 = 1.618033988749895;
 pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize, usize) {
-    let mut best_move = (isize::MIN, (0, 0));
+    let mut best_move = (f32::MIN, (0, 0));
     let mut turn = -1;
     for i in 0..outcomes.len() {
-        let mut score: isize = 0;
+        let mut score: f32 = 0.0;
 
         for j in 0..outcomes[i].len() {
             board.make_move(&outcomes[i][j]).unwrap();
 
-            let ev = evalutate(&board, board.get_turn()) as isize;
-            score = score + ev * turn;
+            let ev = evalutate(&board, board.get_turn()) as f32 * FACTOR;
+            score = score + ev as f32 * turn as f32;
             turn = turn * -1;
         }
         board.reset(outcomes[i].len());
 
-        if score > best_move.0 {
+        if score > best_move.0 as f32 {
             best_move = (score, outcomes[i][0]);
         }
     }
