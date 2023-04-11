@@ -55,6 +55,8 @@ impl Display for Tree {
     }
 }
 
+
+
 /// A function  that takes a board and a turn and returns a vector of all possible outcomes
 /// # Arguments
 /// * `board` - The board to calculate the outcomes from
@@ -62,7 +64,7 @@ impl Display for Tree {
 ///
 pub fn calculate_outcomes(board: &Board, depth: i8) -> Vec<Vec<(usize, usize)>> {
     let mut board = board.clone();
-    let mut outcomes = vec![vec![]];
+    let outcomes = vec![vec![]];
     // calculate all the possible outcomes for the given depth
 
     fn calc_rec(
@@ -106,7 +108,7 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
         let mut score: isize = 0;
 
         for j in 0..outcomes[i].len() {
-            let movres = board.make_move(&outcomes[i][j]);
+            board.make_move(&outcomes[i][j]).unwrap();
 
             let ev = evalutate(&board, board.get_turn()) as isize;
             score = score + ev * turn;

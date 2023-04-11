@@ -21,6 +21,12 @@ pub enum Case {
     Black,
 }
 
+#[derive(Debug, Clone)]
+pub struct History {
+    pub moves: Vec<(usize, usize)>,
+    pub history: Vec<[[Case; 8]; 8]>,
+}
+
 impl Display for Case {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -34,7 +40,7 @@ impl Display for Case {
 #[derive(Clone, Debug)]
 pub struct Board {
     pub cases: [[Case; 8]; 8],
-    pub history: Vec<(usize, usize)>,
+    pub history: History,
 }
 pub const DIRECTIONS: [(i8, i8); 8] = [
     (1, 0),
@@ -53,7 +59,10 @@ impl Board {
     pub fn new() -> Self {
         let mut board = Board {
             cases: [[Case::Empty; 8]; 8],
-            history: Vec::new(),
+            history: History {
+                moves: Vec::with_capacity(60),
+                history: Vec::with_capacity(60)
+            },
         };
         board.cases[3][3] = Case::White;
         board.cases[4][4] = Case::White;
@@ -63,7 +72,7 @@ impl Board {
     }
 
     pub fn get_turn(&self) -> Case {
-        if self.history.len() % 2 == 0 {
+        if self.history.moves.len() % 2 == 0 {
             Case::Black
         } else {
             Case::White
@@ -84,8 +93,7 @@ impl Board {
             return Err("Illegal move");
         }
         self.cases[bmove.0][bmove.1] = color;
-        self.history.push(*bmove);
-
+        
         for direction in DIRECTIONS {
             if check_direction(
                 &self.cases,
@@ -102,6 +110,8 @@ impl Board {
                 }
             }
         }
+        self.history.moves.push(*bmove);
+        self.history.history.push(self.cases);
         Ok(())
     }
 
@@ -169,17 +179,19 @@ impl Board {
     }
 
     pub fn reset(&mut self, num: usize) {
-        self.cases = [[Case::Empty; 8]; 8];
-        self.cases[3][3] = Case::White;
-        self.cases[4][4] = Case::White;
-        self.cases[3][4] = Case::Black;
-        self.cases[4][3] = Case::Black;
+        if num == 0 || self.history.history.len() == 0 {
+            return;
+        }
+        if num >= self.history.history.len() {
+            self.cases = Board::new().cases;
+            self.history.history.clear();
+            self.history.moves.clear();
+            return;
+        }
+        self.cases = self.history.history[self.history.history.len() - num - 1];
         // Remove the last num moves
-        self.history.truncate(self.history.len() - num);
-
-        let moves = self.history.clone();
-        self.history.clear();
-        self.play_moves(&moves).unwrap();
+        self.history.history.truncate(self.history.history.len() - num);
+        self.history.moves.truncate(self.history.moves.len() - num);
     }
 
     pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<(), &str> {
@@ -264,6 +276,30 @@ fn make_move_test() {
     assert_eq!(board.cases[3][4], Case::Black);
     assert_eq!(board.cases[4][3], Case::Black);
     println!("{}", board);
+}
+
+#[test]
+fn available_moves_test() {
+    let board = Board::new();
+    let moves = board.available_moves(None);
+    assert_eq!(moves.len(), 4);
+    assert!(moves.contains(&(2, 3)));
+    assert!(moves.contains(&(3, 2)));
+    assert!(moves.contains(&(4, 5)));
+    assert!(moves.contains(&(5, 4)));
+}
+
+#[test]
+fn reset_test() {
+    let mut board = Board::new();
+    board.make_move(&board.available_moves(None)[0]).expect("Move should be legal");
+    println!("{}", board);
+    board.reset(1);
+    println!("{}", board);
+    assert_eq!(board.cases[3][3], Case::White);
+    assert_eq!(board.cases[4][4], Case::White);
+    assert_eq!(board.cases[3][4], Case::Black);
+    assert_eq!(board.cases[4][3], Case::Black);
 }
 
 pub struct Move {

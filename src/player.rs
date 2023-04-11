@@ -133,7 +133,7 @@ impl Player {
     pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
         use rand::rngs::OsRng;
         use tokio::task::spawn;
-        use tracing::{event, span, Level};
+        use tracing::{event, Level};
         let mut games_result = (0, 0, 0); // White Black Draw
                                           // 1 for white, 0 for black, 2 for draw
 
