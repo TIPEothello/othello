@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 2/04/2023 01:17:17
+ Last Modified: 4/04/2023 02:16:42
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,7 +11,50 @@
 */
 #![allow(dead_code)]
 
-use crate::board::{self, Board, Case};
+use crate::board::{Board, Case};
+use std::fmt::{Display, Formatter};
+
+#[derive(Clone, Debug)]
+pub struct Tree {
+    pub depth: u8,
+    pub subtree: Option<Vec<Tree>>,
+    pub mov: Option<(usize, usize)>,
+    pub value: Option<i8>,
+}
+
+impl Tree {
+    pub fn from_board(board: &mut Board, mov: Option<(usize, usize)>, depth: u8) -> Self {
+        let moves = board.available_moves(None);
+        if depth == 0 || moves.len() == 0 {
+            Tree {
+                depth: 0,
+                subtree: None,
+                value: None,
+                mov,
+            }
+        } else {
+            let mut subtrees = Vec::new();
+            for mov in moves {
+                board.make_move(&mov).unwrap();
+                subtrees.push(Tree::from_board(board, Some(mov), depth - 1));
+                board.reset(1);
+            }
+            Tree {
+                depth,
+                subtree: Some(subtrees),
+                value: None,
+                mov,
+            }
+        }
+    }
+}
+
+impl Display for Tree {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tree<Depth: {}>", self.depth)
+    }
+}
+
 /// A function  that takes a board and a turn and returns a vector of all possible outcomes
 /// # Arguments
 /// * `board` - The board to calculate the outcomes from
