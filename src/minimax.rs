@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 12:28:7
+ Last Modified: 18/04/2023 12:51:1
  Modified By: realbacon
  -----
  License  : MIT
@@ -98,16 +98,15 @@ pub fn calculate_outcomes(board: &Board, depth: i8) -> Vec<Vec<(usize, usize)>> 
 
     outcomes
 }
-const FACTOR: f32 = 1.20205690315959428539973816151144999076498629234049888179227155534183820578631309018645587340685;
+
 pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize, usize) {
     let mut best_move = (f32::MIN, (0, 0));
     let mut turn = 1;
-    let max_player = board.get_turn();
     for i in 0..outcomes.len() {
         let mut score: f32 = 0.0;
 
         for j in 0..outcomes[i].len() {
-            let ev = evaluate(board, outcomes[i][j], j == outcomes[i].len() - 1) as f32 * FACTOR;
+            let ev = evaluate(board, outcomes[i][j], j == outcomes[i].len() - 1) as f32;
             score = score + ev as f32 * turn as f32;
             turn = turn * -1;
         }
@@ -119,20 +118,15 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     }
     best_move.1
 }
-const CORNERS: [(usize, usize); 4] = [(0, 0), (0, 7), (7, 0), (7, 7)];
-const AROUND_CORNERS: [(usize, usize); 12] = [
-    (0, 1),
-    (1, 0),
-    (1, 1),
-    (0, 6),
-    (1, 6),
-    (1, 7),
-    (6, 0),
-    (6, 1),
-    (7, 1),
-    (6, 6),
-    (6, 7),
-    (7, 6),
+const PLACEMENT_SCORE: [[isize; 8]; 8] = [
+    [30, -25, 10, 5, 5, 10, -25, 30],
+    [-25, -25, 1, 1, 1, 1, -25, -25],
+    [10, 1, 5, 2, 2, 5, 1, 10],
+    [5, 1, 2, 1, 1, 2, 1, 5],
+    [5, 1, 2, 1, 1, 2, 1, 5],
+    [10, 1, 5, 2, 2, 5, 1, 10],
+    [-25, -25, 1, 1, 1, 1, -25, -25],
+    [30, -25, 10, 5, 5, 10, -25, 30],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i32 {
     let turn = board.get_turn();
@@ -145,18 +139,12 @@ pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i3
     let score = board.score();
     let new_material_count = (score.0 - score.1) as isize;
     if turn == Case::White {
-        res = new_material_count - old_material_count;
+        res = ((new_material_count - old_material_count) as f32 * 0.5) as isize;
     } else {
         res = old_material_count - new_material_count;
     }
 
-    // Evalutation of the move based on the corners
-    if CORNERS.contains(&move_) {
-        res += 15;
-    }
-    if AROUND_CORNERS.contains(&move_) {
-        res -= 10;
-    }
+    res += (PLACEMENT_SCORE[move_.0][move_.1] as f32 * 0.2) as isize;
 
     res as i32
 }

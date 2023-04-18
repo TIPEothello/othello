@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 12:35:52
+ Last Modified: 18/04/2023 12:45:38
  Modified By: realbacon
  -----
  License  : MIT
@@ -21,7 +21,7 @@ async fn main() {
         player::Strategy::Minimax { depth: 4 },
         player::Strategy::Random,
     )));
-    println!("{:?}", player.play_games(10).await);
+    println!("{:?}", player.play_games(100).await);
     let mut board = board::Board::new();
     //let tree = minimax::Tree::from_board(&mut board, None, 6);
     //println!("{:?}", tree);
