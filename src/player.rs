@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 12:25:38
+ Last Modified: 18/04/2023 02:03:47
  Modified By: realbacon
  -----
  License  : MIT
@@ -97,7 +97,10 @@ impl Player {
                     let mut input = String::new();
                     std::io::stdin().read_line(&mut input).unwrap();
                     let input = input.trim();
-                    let input = input.split("").filter(|s| s.len() > 0).collect::<Vec<&str>>();
+                    let input = input
+                        .split("")
+                        .filter(|s| s.len() > 0)
+                        .collect::<Vec<&str>>();
                     // Input can be A1 or a1
                     if input.len() == 0 {
                         continue;
@@ -189,7 +192,7 @@ impl Player {
         for _ in 0..n {
             let game_thread = spawn(async move {
                 let mut board = Board::new();
-                event!(Level::INFO, "inside my_function!");
+                println!("Starting game");
                 while !board.available_moves(None).is_empty() {
                     let strategy = match board.get_turn() {
                         Case::White => strat.1,

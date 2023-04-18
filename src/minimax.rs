@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 12:51:1
+ Last Modified: 18/04/2023 01:40:39
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,7 +11,10 @@
 */
 #![allow(dead_code)]
 
-use crate::{board::{Board, Case}, rules::enemy};
+use crate::{
+    board::{Board, Case},
+    rules::enemy,
+};
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
@@ -142,15 +145,16 @@ pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i3
     // Evaluation of the move based on the material count
     let old_material_count = (score.0 - score.1) as isize;
     board.make_move(&move_).unwrap();
+
     let score = board.score();
     let new_material_count = (score.0 - score.1) as isize;
     if turn == Case::White {
-        res = ((new_material_count - old_material_count) as f32 * 0.5) as isize;
+        res = ((new_material_count - old_material_count) * 3) as isize;
     } else {
         res = old_material_count - new_material_count;
     }
-
-    res += (PLACEMENT_SCORE[move_.0][move_.1] as f32 * 0.2) as isize;
+    res -= board.available_moves(None).len() as isize * 5;
+    res += (PLACEMENT_SCORE[move_.0][move_.1] as f32) as isize;
 
     res as i32
 }
