@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 07:10:9
+ Last Modified: 18/04/2023 07:31:12
  Modified By: realbacon
  -----
  License  : MIT
@@ -63,7 +63,24 @@ impl Tree {
 
 impl Display for Tree {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Tree<Depth: {}>", self.depth)
+        let mut res = String::new();
+        fn rec(tree: &Tree, depth: u8, res: &mut String) {
+            for _ in 0..depth {
+                res.push_str("   ");
+            }
+            res.push_str(&format!(
+                "Depth: {}, Moves: {}, Score: {:?}, Value: {:?}, Move: {:?}",
+                tree.depth, tree.moves, tree.score, tree.value, tree.mov
+            ));
+            res.push_str("\n");
+            if let Some(subtree) = &tree.subtree {
+                for sub in subtree {
+                    rec(sub, depth + 1, res);
+                }
+            }
+        }
+        rec(self, 0, &mut res);
+        write!(f, "{}", res)
     }
 }
 
@@ -200,6 +217,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         .find(|x| x.value.unwrap() == best)
         .unwrap()
         .clone();
+    println!("{}", tree);
     return best_tree;
 }
 
