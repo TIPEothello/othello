@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 4/04/2023 02:11:34
+ Last Modified: 11/04/2023 01:48:52
  Modified By: realbacon
  -----
  License  : MIT
@@ -61,7 +61,7 @@ impl Board {
             cases: [[Case::Empty; 8]; 8],
             history: History {
                 moves: Vec::with_capacity(60),
-                history: Vec::with_capacity(60)
+                history: Vec::with_capacity(60),
             },
         };
         board.cases[3][3] = Case::White;
@@ -93,7 +93,7 @@ impl Board {
             return Err("Illegal move");
         }
         self.cases[bmove.0][bmove.1] = color;
-        
+
         for direction in DIRECTIONS {
             if check_direction(
                 &self.cases,
@@ -162,7 +162,7 @@ impl Board {
         moves
     }
 
-    /// Returns the score of the board
+    /// Returns the score of the board (whiet,black)
     pub fn score(&self) -> (usize, usize) {
         let mut white = 0;
         let mut black = 0;
@@ -190,7 +190,9 @@ impl Board {
         }
         self.cases = self.history.history[self.history.history.len() - num - 1];
         // Remove the last num moves
-        self.history.history.truncate(self.history.history.len() - num);
+        self.history
+            .history
+            .truncate(self.history.history.len() - num);
         self.history.moves.truncate(self.history.moves.len() - num);
     }
 
@@ -292,7 +294,9 @@ fn available_moves_test() {
 #[test]
 fn reset_test() {
     let mut board = Board::new();
-    board.make_move(&board.available_moves(None)[0]).expect("Move should be legal");
+    board
+        .make_move(&board.available_moves(None)[0])
+        .expect("Move should be legal");
     println!("{}", board);
     board.reset(1);
     println!("{}", board);

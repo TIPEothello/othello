@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 11/04/2023 01:22:23
+ Last Modified: 18/04/2023 12:51:1
  Modified By: realbacon
  -----
  License  : MIT
@@ -104,17 +104,15 @@ pub fn calculate_outcomes(board: &Board, depth: i8) -> Vec<Vec<(usize, usize)>> 
 
     outcomes
 }
-const FACTOR: f32 = 1.618033988749895;
+
 pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize, usize) {
     let mut best_move = (f32::MIN, (0, 0));
-    let mut turn = -1;
+    let mut turn = 1;
     for i in 0..outcomes.len() {
         let mut score: f32 = 0.0;
 
         for j in 0..outcomes[i].len() {
-            board.make_move(&outcomes[i][j]).unwrap();
-
-            let ev = evalutate(&board, board.get_turn()) as f32 * FACTOR;
+            let ev = evaluate(board, outcomes[i][j], j == outcomes[i].len() - 1) as f32;
             score = score + ev as f32 * turn as f32;
             turn = turn * -1;
         }
@@ -126,6 +124,37 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     }
     best_move.1
 }
+const PLACEMENT_SCORE: [[isize; 8]; 8] = [
+    [30, -25, 10, 5, 5, 10, -25, 30],
+    [-25, -25, 1, 1, 1, 1, -25, -25],
+    [10, 1, 5, 2, 2, 5, 1, 10],
+    [5, 1, 2, 1, 1, 2, 1, 5],
+    [5, 1, 2, 1, 1, 2, 1, 5],
+    [10, 1, 5, 2, 2, 5, 1, 10],
+    [-25, -25, 1, 1, 1, 1, -25, -25],
+    [30, -25, 10, 5, 5, 10, -25, 30],
+];
+pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i32 {
+    let turn = board.get_turn();
+    let mut res: isize = 0;
+    let score = board.score();
+
+    // Evaluation of the move based on the material count
+    let old_material_count = (score.0 - score.1) as isize;
+    board.make_move(&move_).unwrap();
+    let score = board.score();
+    let new_material_count = (score.0 - score.1) as isize;
+    if turn == Case::White {
+        res = ((new_material_count - old_material_count) as f32 * 0.5) as isize;
+    } else {
+        res = old_material_count - new_material_count;
+    }
+
+    res += (PLACEMENT_SCORE[move_.0][move_.1] as f32 * 0.2) as isize;
+
+    res as i32
+}
+
 /*
 pub fn minimax_tree(tree: &mut Tree, color: Case) -> &Tree {
     pub fn minimax_rec(tree_before: &Tree, tree: &mut Tree, color: Case, current: Case) -> i32 {
@@ -155,28 +184,3 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> &Tree {
     return best_tree;
 }
 */
-pub fn evalutate(board: &Board, turn: Case) -> i32 {
-    let mut res = 0;
-    for i in 0..8 {
-        for j in 0..8 {
-            match board.cases[i][j] {
-                Case::Empty => {}
-                Case::White => {
-                    if turn == Case::White {
-                        res += 1
-                    } else {
-                        res -= 1
-                    }
-                }
-                Case::Black => {
-                    if turn == Case::Black {
-                        res += 1
-                    } else {
-                        res -= 1
-                    }
-                }
-            }
-        }
-    }
-    res
-}
