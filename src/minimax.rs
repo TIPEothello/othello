@@ -135,7 +135,7 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
         let mut score: f32 = 0.0;
 
         for j in 0..outcomes[i].len() {
-            let ev = evaluate(board, outcomes[i][j], j == outcomes[i].len() - 1) as f32;
+            let ev = evaluate(board, outcomes[i][j]) as f32;
             score = score + ev as f32 * turn as f32;
             turn = turn * -1;
         }
@@ -157,9 +157,9 @@ const PLACEMENT_SCORE: [[isize; 8]; 8] = [
     [-25, -25, 1, 1, 1, 1, -25, -25],
     [40, -25, 10, 5, 5, 10, -25, 40],
 ];
-pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i32 {
+pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
-    let mut res: isize = 0;
+    let res: isize;
     let score = board.score();
 
     // Evaluation of the move based on the material count
@@ -187,7 +187,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         current: Case,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate_tree(original_score, &tree, color, current, tree.mov.unwrap());
+            let val = evaluate_tree(original_score, &tree, color, tree.mov.unwrap());
             tree.value = Some(val);
             return val;
         }
@@ -221,7 +221,6 @@ pub fn evaluate_tree(
     original_score: (usize, usize),
     tree: &Tree,
     color: Case,
-    turn: Case,
     move_next: (usize, usize),
 ) -> i32 {
     /*if tree.moves == 0 {
@@ -232,7 +231,6 @@ pub fn evaluate_tree(
             -1000
         };
     }*/
-    let mut res: isize;
     use rand::Rng;
     let mut rng = rand::thread_rng();
     let range: isize = 25
@@ -241,7 +239,7 @@ pub fn evaluate_tree(
     //println!("Range: {}", range);
 
     // Evaluation of the move based on the material count
-    res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as f32 * 8.0
+    let mut res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as f32 * 8.0
         / (original_score.0 + original_score.1) as f32) as isize;
     if color == Case::Black {
         res = res * -1;

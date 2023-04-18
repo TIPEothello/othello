@@ -16,7 +16,7 @@ use std::io::stdout;
 
 use crate::board::{Board, Case};
 use crate::minimax;
-use crossterm::cursor::{MoveDown, MoveUp};
+use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
@@ -189,7 +189,6 @@ impl Player {
     pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
         use rand::rngs::OsRng;
         use tokio::task::spawn;
-        use tracing::{event, Level};
         let mut games_result = (0, 0, 0); // White Black Draw
 
         let mut game_handler = Vec::new();
