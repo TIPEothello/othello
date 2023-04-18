@@ -26,7 +26,8 @@ pub enum Strategy {
     Random,
     Greedy,
     Manual,
-    Minimax { depth: i8 },
+    Minimax { depth: u8 },
+    MinimaxTree { depth: u8 },
 }
 
 pub struct Player {
@@ -78,6 +79,11 @@ impl Player {
                     let outcomes = minimax::calculate_outcomes(&board, *depth);
                     let best_move = minimax::minimax(&outcomes, &mut board);
                     board.make_move(&best_move).unwrap();
+                }
+                Strategy::MinimaxTree { depth } => {
+                    let mut tree = minimax::Tree::from_board(&mut board, None, *depth);
+                    let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
+                    board.make_move(&best_tree.mov.unwrap()).unwrap();
                 }
                 Strategy::Manual => {
                     auto = false;
@@ -216,6 +222,11 @@ impl Player {
                             }
                             let best_move = minimax::minimax(&outcomes, &mut board);
                             board.make_move(&best_move).unwrap();
+                        }
+                        Strategy::MinimaxTree { depth } => {
+                            let mut tree = minimax::Tree::from_board(&mut board, None, depth);
+                            let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
+                            board.make_move(&best_tree.mov.unwrap()).unwrap();
                         }
                         Strategy::Manual => {
                             panic!("Manual strategy is not supported in play_games");

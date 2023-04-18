@@ -15,11 +15,11 @@ mod minimax;
 mod player;
 mod rules;
 
-#[tokio::main(worker_threads = 100)]
+#[tokio::main(worker_threads = 12)]
 async fn main() {
     let mut player = player::Player::new(Some((
         player::Strategy::Random,
-        player::Strategy::Minimax { depth: 5 },
+        player::Strategy::MinimaxTree { depth: 5 },
     )));
-    println!("{:?}", player.play_games(100).await);
+    println!("{:?}", player.play_games(30).await);
 }
