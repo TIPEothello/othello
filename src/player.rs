@@ -111,8 +111,8 @@ impl Player {
                         continue;
                     }
                     let input = (
-                        input[1].parse::<usize>().unwrap() - 1,
                         input[0].to_uppercase().chars().next().unwrap() as usize - 65,
+                        input[1].parse::<usize>().unwrap() - 1,
                     );
                     if !moves.contains(&input) {
                         println!("Invalid move");

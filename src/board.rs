@@ -219,10 +219,10 @@ impl Display for Board {
                 RGB(17, 153, 90)
             }
         }
-        let mut string = String::from("   a  b  c  d  e  f  g  h \n");
+        let mut string = String::from("   1  2  3  4  5  6  7  8 \n");
         let mut bg: u8 = 0;
         for (i, line) in self.cases.iter().enumerate() {
-            string.push_str(&format!("{} ", i + 1)[..]);
+            string.push_str(&format!("{} ", (i as u8 + 65) as char)[..]);
             for case in line.iter() {
                 match case {
                     Case::Empty => {
