@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 08:18:27
+ Last Modified: 18/04/2023 08:37:47
  Modified By: realbacon
  -----
  License  : MIT
@@ -233,13 +233,20 @@ pub fn evaluate_tree(
         };
     }*/
     let mut res: isize;
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let range: isize = 25 / ((original_score.0 + original_score.1 + 1) as f32).ln() as isize;
+    //println!("Range: {}", range);
 
     // Evaluation of the move based on the material count
     res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) * 5) as isize;
     if color == Case::Black {
         res = res * -1;
     }
-
+    if range > 0 {
+        let noise = rng.gen_range(-range..range);
+        res += noise;
+    }
     // Evaluation of the move based on the number of available moves
 
     //res -= tree.moves as isize * 5; // Moves for the enemy
