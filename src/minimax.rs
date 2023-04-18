@@ -187,21 +187,17 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         current: Case,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate_tree(original_score, &tree, current, tree.mov.unwrap());
+            let val = evaluate_tree(original_score, &tree, color, current, tree.mov.unwrap());
             tree.value = Some(val);
             return val;
         }
-        let mut best = i32::MIN;
+        let mut best = if current == color { i32::MIN } else { i32::MAX };
         for subtree in tree.subtree.as_mut().unwrap() {
             let val = minimax_rec(original_score, subtree, color, enemy(&current));
             if color == current {
-                if val > best {
-                    best = val;
-                }
+                best = best.max(val);
             } else {
-                if val < best {
-                    best = val;
-                }
+                best = best.min(val);
             }
         }
         tree.value = Some(best);
@@ -209,38 +205,26 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
     }
 
     let best = minimax_rec(tree.score, tree, color, color);
-    let best_tree = tree
-        .subtree
-        .as_ref()
-        .unwrap()
-        .iter()
-        .find(|x| x.value.unwrap() == best)
-        .unwrap()
-        .clone();
-    println!("{}", tree);
+    let best_tree = tree.subtree.as_ref().unwrap().iter().find(|x| x.value.unwrap() == best).unwrap().clone();
+	println!("Tree: {}", tree);
     return best_tree;
 }
 
-pub fn evaluate_tree(
-    original_score: (usize, usize),
-    tree: &Tree,
-    turn: Case,
-    move_next: (usize, usize),
-) -> i32 {
-    let mut res: isize = 0;
+
+
+pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case, turn: Case, move_next: (usize, usize)) -> i32 {
+	if tree.moves == 0 { // Last move evaluation
+		return if (tree.score.0 > tree.score.1) ^ (color == turn) {1000} else {-1000};
+	}
+    let mut res: isize;
 
     // Evaluation of the move based on the material count
-    let old_material_count = (original_score.0 - original_score.1) as isize;
+    res = -(((tree.score.0 + original_score.1 - tree.score.1 - original_score.0) * 3) as isize);
 
-    let score = tree.score;
-    let new_material_count = (score.0 - score.1) as isize;
-    if turn == Case::White {
-        res = (new_material_count - old_material_count) as isize;
-    } else {
-        res = (old_material_count - new_material_count) as isize;
-    }
-    /*res -= tree.moves as isize * 5;*/
-    let test = (PLACEMENT_SCORE[move_next.0][move_next.1] as f32 * 0.1) as isize;
-    //res += test;
+	// Evaluation of the move based on the number of available moves
+
+    res -= tree.moves as isize * 5; // Moves for the enemy
+    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32) as isize;
+
     res as i32
 }
