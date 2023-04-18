@@ -11,15 +11,17 @@
 */
 #![allow(dead_code)]
 
-use crate::board::{Board, Case};
+use crate::{board::{Board, Case}, rules::enemy};
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct Tree {
     pub depth: u8,
     pub subtree: Option<Vec<Tree>>,
+    pub is_final: bool,
     pub mov: Option<(usize, usize)>,
-    pub value: Option<i8>,
+    pub cases: [[Case; 8]; 8],
+    pub value: Option<i32>,
 }
 
 impl Tree {
@@ -29,6 +31,8 @@ impl Tree {
             Tree {
                 depth: 0,
                 subtree: None,
+                is_final: moves.len() == 0,
+                cases: board.cases,
                 value: None,
                 mov,
             }
@@ -42,6 +46,8 @@ impl Tree {
             Tree {
                 depth,
                 subtree: Some(subtrees),
+                is_final: false,
+                cases: board.cases,
                 value: None,
                 mov,
             }
@@ -148,3 +154,33 @@ pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i3
 
     res as i32
 }
+
+/*
+pub fn minimax_tree(tree: &mut Tree, color: Case) -> &Tree {
+    pub fn minimax_rec(tree_before: &Tree, tree: &mut Tree, color: Case, current: Case) -> i32 {
+        if tree.is_final || tree.subtree.is_none() {
+            let val = evalutate(tree_before.cases, &tree.cases, current, tree.mov);
+            tree.value = Some(val);
+            return val;
+        }
+        let mut best = i32::MIN;
+        for subtree in tree.subtree.as_mut().unwrap() {
+            let val = minimax_rec(tree, subtree, color, enemy(&current));
+            if color == current {
+                if val > best {
+                    best = val;
+                }
+            } else {
+                if val < best {
+                    best = val;
+                }
+            }
+        }
+        tree.value = Some(best);
+        return best;
+    }
+    let best = minimax_rec(tree, tree, color, color);
+    let mut best_tree = tree.subtree.unwrap().iter().find(|x| x.value.unwrap() == best).unwrap();
+    return best_tree;
+}
+*/

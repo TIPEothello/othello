@@ -20,10 +20,12 @@ use crossterm::cursor::{MoveDown, MoveUp};
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
+
 #[derive(Debug, Clone, Copy)]
 pub enum Strategy {
     Random,
     Greedy,
+    Manual,
     Minimax { depth: i8 },
 }
 
@@ -55,6 +57,7 @@ impl Player {
         let mut quit = false;
         println!();
         while !board.available_moves(None).is_empty() {
+            let mut auto = true;
             println!("{}", board);
             let strategy = match board.get_turn() {
                 Case::White => &self.strategy.1,
@@ -76,33 +79,73 @@ impl Player {
                     let best_move = minimax::minimax(&outcomes, &mut board);
                     board.make_move(&best_move).unwrap();
                 }
+                Strategy::Manual => {
+                    auto = false;
+                    let moves = board.available_moves(None);
+                    if moves.is_empty() {
+                        break;
+                    }
+                    println!(
+                        "Available moves: {}",
+                        moves
+                            .iter()
+                            .map(print_coords)
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    );
+                    // Get user input with std::io
+                    let mut input = String::new();
+                    std::io::stdin().read_line(&mut input).unwrap();
+                    let input = input.trim();
+                    let input = input.split("").filter(|s| s.len() > 0).collect::<Vec<&str>>();
+                    // Input can be A1 or a1
+                    if input.len() != 2 {
+                        if input[0] == "q" {
+                            quit = true;
+                            break;
+                        }
+                        println!("Invalid move");
+                        continue;
+                    }
+                    let input = (
+                        input[0].to_uppercase().chars().next().unwrap() as usize - 65,
+                        input[1].parse::<usize>().unwrap() - 1,
+                    );
+                    if !moves.contains(&input) {
+                        println!("Invalid move");
+                        continue;
+                    }
+                    board.make_move(&input).unwrap();
+                }
             }
             // Wait for user to press enter
 
-            loop {
-                match read().unwrap() {
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Enter,
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => break,
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Char('q'),
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => {
-                        quit = true;
-                        break;
+            if auto {
+                loop {
+                    match read().unwrap() {
+                        Event::Key(KeyEvent {
+                            code: KeyCode::Enter,
+                            modifiers: KeyModifiers::NONE,
+                            kind: KeyEventKind::Press,
+                            state: KeyEventState::NONE,
+                        }) => break,
+                        Event::Key(KeyEvent {
+                            code: KeyCode::Char('q'),
+                            modifiers: KeyModifiers::NONE,
+                            kind: KeyEventKind::Press,
+                            state: KeyEventState::NONE,
+                        }) => {
+                            quit = true;
+                            break;
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             if quit {
                 break;
             }
-            stdout.queue(MoveUp(if is_win { 10 } else { 11 })).unwrap();
+            //stdout.queue(MoveUp(if is_win { 10 } else { 11 })).unwrap();
         }
 
         if quit {
@@ -168,6 +211,9 @@ impl Player {
                             let best_move = minimax::minimax(&outcomes, &mut board);
                             board.make_move(&best_move).unwrap();
                         }
+                        Strategy::Manual => {
+                            panic!("Manual strategy is not supported in play_games");
+                        }
                     }
                 }
                 board.score()
@@ -190,4 +236,11 @@ impl Player {
         }
         games_result
     }
+}
+
+pub fn print_coords(c: &(usize, usize)) -> String {
+    // A1
+    let x = c.0 as u8 + 65;
+    let y = c.1 as u8 + 49;
+    format!("{}{}", x as char, y as char)
 }

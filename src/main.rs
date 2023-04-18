@@ -18,11 +18,8 @@ mod rules;
 #[tokio::main(worker_threads = 10)]
 async fn main() {
     let mut player = player::Player::new(Some((
-        player::Strategy::Minimax { depth: 4 },
-        player::Strategy::Random,
+        player::Strategy::Minimax { depth: 5 },
+        player::Strategy::Manual,
     )));
-    println!("{:?}", player.play_games(100).await);
-    let mut board = board::Board::new();
-    //let tree = minimax::Tree::from_board(&mut board, None, 6);
-    //println!("{:?}", tree);
+    player.progressive_play();
 }
