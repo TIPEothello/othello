@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 07:31:12
+ Last Modified: 18/04/2023 08:18:27
  Modified By: realbacon
  -----
  License  : MIT
@@ -148,14 +148,14 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     best_move.1
 }
 const PLACEMENT_SCORE: [[isize; 8]; 8] = [
-    [30, -25, 10, 5, 5, 10, -25, 30],
+    [40, -25, 10, 5, 5, 10, -25, 40],
     [-25, -25, 1, 1, 1, 1, -25, -25],
     [10, 1, 5, 2, 2, 5, 1, 10],
     [5, 1, 2, 1, 1, 2, 1, 5],
     [5, 1, 2, 1, 1, 2, 1, 5],
     [10, 1, 5, 2, 2, 5, 1, 10],
     [-25, -25, 1, 1, 1, 1, -25, -25],
-    [30, -25, 10, 5, 5, 10, -25, 30],
+    [40, -25, 10, 5, 5, 10, -25, 40],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i32 {
     let turn = board.get_turn();
@@ -205,26 +205,45 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
     }
 
     let best = minimax_rec(tree.score, tree, color, color);
-    let best_tree = tree.subtree.as_ref().unwrap().iter().find(|x| x.value.unwrap() == best).unwrap().clone();
-	println!("Tree: {}", tree);
+    let best_tree = tree
+        .subtree
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|x| x.value.unwrap() == best)
+        .unwrap()
+        .clone();
+
     return best_tree;
 }
 
-
-
-pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case, turn: Case, move_next: (usize, usize)) -> i32 {
-	if tree.moves == 0 { // Last move evaluation
-		return if (tree.score.0 > tree.score.1) ^ (color == turn) {1000} else {-1000};
-	}
+pub fn evaluate_tree(
+    original_score: (usize, usize),
+    tree: &Tree,
+    color: Case,
+    turn: Case,
+    move_next: (usize, usize),
+) -> i32 {
+    /*if tree.moves == 0 {
+        // Last move evaluation
+        return if (tree.score.0 > tree.score.1) ^ (color == turn) {
+            1000
+        } else {
+            -1000
+        };
+    }*/
     let mut res: isize;
 
     // Evaluation of the move based on the material count
-    res = -(((tree.score.0 + original_score.1 - tree.score.1 - original_score.0) * 3) as isize);
+    res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) * 5) as isize;
+    if color == Case::Black {
+        res = res * -1;
+    }
 
-	// Evaluation of the move based on the number of available moves
+    // Evaluation of the move based on the number of available moves
 
-    res -= tree.moves as isize * 5; // Moves for the enemy
-    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32) as isize;
+    //res -= tree.moves as isize * 5; // Moves for the enemy
+    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32 * 0.3) as isize;
 
     res as i32
 }

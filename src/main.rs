@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 07:24:41
+ Last Modified: 18/04/2023 08:19:33
  Modified By: realbacon
  -----
  License  : MIT
@@ -17,8 +17,16 @@ mod rules;
 
 #[tokio::main(worker_threads = 100)]
 async fn main() {
-    let board = board::Board::new();
-	let mut tree = minimax::Tree::from_board(&mut board.clone(), None, 6);
-	minimax::minimax_tree(&mut tree, board::Case::Black);
-
+    let mut player = player::Player::new(Some((
+        player::Strategy::MinimaxTree { depth: 4 },
+        player::Strategy::MinimaxTree { depth: 4 },
+    )));
+    let result = player.play_games(100).await;
+    println!(
+        "Win ratio : White {}% ({}) - Black {}% ({})",
+        result.0 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
+        result.0,
+        result.1 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
+        result.1
+    );
 }
