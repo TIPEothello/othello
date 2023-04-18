@@ -99,6 +99,9 @@ impl Player {
                     let input = input.trim();
                     let input = input.split("").filter(|s| s.len() > 0).collect::<Vec<&str>>();
                     // Input can be A1 or a1
+                    if input.len() == 0 {
+                        continue;
+                    }
                     if input.len() != 2 {
                         if input[0] == "q" {
                             quit = true;
