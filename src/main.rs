@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 02:05:57
+ Last Modified: 18/04/2023 07:17:56
  Modified By: realbacon
  -----
  License  : MIT
@@ -15,11 +15,11 @@ mod minimax;
 mod player;
 mod rules;
 
-#[tokio::main(worker_threads = 12)]
+#[tokio::main(worker_threads = 100)]
 async fn main() {
     let mut player = player::Player::new(Some((
         player::Strategy::Random,
-        player::Strategy::MinimaxTree { depth: 5 },
+        player::Strategy::MinimaxTree { depth: 4 },
     )));
-    println!("{:?}", player.play_games(30).await);
+    println!("{:?}", player.progressive_play());
 }

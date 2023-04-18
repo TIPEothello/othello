@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 01:40:39
+ Last Modified: 18/04/2023 07:10:9
  Modified By: realbacon
  -----
  License  : MIT
@@ -21,9 +21,9 @@ use std::fmt::{Display, Formatter};
 pub struct Tree {
     pub depth: u8,
     pub subtree: Option<Vec<Tree>>,
-	pub moves: usize,
+    pub moves: usize,
     pub mov: Option<(usize, usize)>,
-	pub score: (usize, usize),
+    pub score: (usize, usize),
     pub cases: [[Case; 8]; 8],
     pub value: Option<i32>,
 }
@@ -37,7 +37,7 @@ impl Tree {
                 subtree: None,
                 moves: moves.len(),
                 cases: board.cases,
-				score: board.score(),
+                score: board.score(),
                 value: None,
                 mov,
             }
@@ -51,8 +51,8 @@ impl Tree {
             Tree {
                 depth,
                 subtree: Some(subtrees),
-				moves: moves.len(),
-				score: board.score(),
+                moves: moves.len(),
+                score: board.score(),
                 cases: board.cases,
                 value: None,
                 mov,
@@ -156,15 +156,19 @@ pub fn evaluate(board: &mut Board, move_: (usize, usize), last_move: bool) -> i3
     } else {
         res = old_material_count - new_material_count;
     }
-    res -= board.available_moves(None).len() as isize * 5;
-    res += (PLACEMENT_SCORE[move_.0][move_.1] as f32) as isize;
+    //res -= board.available_moves(None).len() as isize * 5;
+    //res += (PLACEMENT_SCORE[move_.0][move_.1] as f32) as isize;
 
     res as i32
 }
 
-
 pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
-    pub fn minimax_rec(original_score: (usize, usize), tree: &mut Tree, color: Case, current: Case) -> i32 {
+    pub fn minimax_rec(
+        original_score: (usize, usize),
+        tree: &mut Tree,
+        color: Case,
+        current: Case,
+    ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
             let val = evaluate_tree(original_score, &tree, current, tree.mov.unwrap());
             tree.value = Some(val);
@@ -188,13 +192,23 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
     }
 
     let best = minimax_rec(tree.score, tree, color, color);
-    let best_tree = tree.subtree.as_ref().unwrap().iter().find(|x| x.value.unwrap() == best).unwrap().clone();
+    let best_tree = tree
+        .subtree
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|x| x.value.unwrap() == best)
+        .unwrap()
+        .clone();
     return best_tree;
 }
 
-
-
-pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, turn: Case, move_next: (usize, usize)) -> i32 {
+pub fn evaluate_tree(
+    original_score: (usize, usize),
+    tree: &Tree,
+    turn: Case,
+    move_next: (usize, usize),
+) -> i32 {
     let mut res: isize = 0;
 
     // Evaluation of the move based on the material count
@@ -203,12 +217,12 @@ pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, turn: Case, mo
     let score = tree.score;
     let new_material_count = (score.0 - score.1) as isize;
     if turn == Case::White {
-        res = ((new_material_count - old_material_count) * 3) as isize;
+        res = (new_material_count - old_material_count) as isize;
     } else {
-        res = old_material_count - new_material_count;
+        res = (old_material_count - new_material_count) as isize;
     }
-    res -= tree.moves as isize * 5;
-    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32) as isize;
-
+    /*res -= tree.moves as isize * 5;*/
+    let test = (PLACEMENT_SCORE[move_next.0][move_next.1] as f32 * 0.1) as isize;
+    //res += test;
     res as i32
 }

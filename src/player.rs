@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 02:03:47
+ Last Modified: 18/04/2023 07:13:43
  Modified By: realbacon
  -----
  License  : MIT
@@ -36,6 +36,7 @@ pub struct Player {
 }
 
 impl Player {
+    /// New players (Black,white)
     pub fn new(strategy: Option<(Strategy, Strategy)>) -> Player {
         let strategy = match strategy {
             Some(s) => s,
@@ -61,8 +62,8 @@ impl Player {
             let mut auto = true;
             println!("{}", board);
             let strategy = match board.get_turn() {
-                Case::White => &self.strategy.1,
-                Case::Black => &self.strategy.0,
+                Case::White => &self.strategy.0,
+                Case::Black => &self.strategy.1,
                 Case::Empty => {
                     panic!("Empty case is not a valid turn");
                 }
@@ -190,7 +191,6 @@ impl Player {
         use tokio::task::spawn;
         use tracing::{event, Level};
         let mut games_result = (0, 0, 0); // White Black Draw
-                                          // 1 for white, 0 for black, 2 for draw
 
         let mut game_handler = Vec::new();
         let strat = self.strategy.clone();
@@ -198,11 +198,10 @@ impl Player {
         for _ in 0..n {
             let game_thread = spawn(async move {
                 let mut board = Board::new();
-                println!("Starting game");
                 while !board.available_moves(None).is_empty() {
                     let strategy = match board.get_turn() {
-                        Case::White => strat.1,
-                        Case::Black => strat.0,
+                        Case::White => strat.0,
+                        Case::Black => strat.1,
                         Case::Empty => {
                             panic!("Empty case is not a valid turn");
                         }
@@ -239,16 +238,12 @@ impl Player {
         }
         for game in game_handler {
             let (white, black) = game.await.unwrap();
-            match white.cmp(&black) {
-                Ordering::Equal => {
-                    games_result.2 += 1;
-                }
-                Ordering::Greater => {
-                    games_result.0 += 1;
-                }
-                Ordering::Less => {
-                    games_result.1 += 1;
-                }
+            if white > black {
+                games_result.0 += 1;
+            } else if white < black {
+                games_result.1 += 1;
+            } else {
+                games_result.2 += 1;
             }
         }
         games_result
