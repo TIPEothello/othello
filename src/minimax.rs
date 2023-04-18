@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 08:38:58
+ Last Modified: 18/04/2023 08:43:36
  Modified By: realbacon
  -----
  License  : MIT
@@ -235,7 +235,9 @@ pub fn evaluate_tree(
     let mut res: isize;
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    let range: isize = 25 / ((original_score.0 + original_score.1 + 1) as f32).log(3.) as isize;
+    let range: isize = 25
+        / ((original_score.0 + original_score.1 + 1) as f32).log(3.618033988749894848204586834)
+            as isize;
     //println!("Range: {}", range);
 
     // Evaluation of the move based on the material count
