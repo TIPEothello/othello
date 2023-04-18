@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 4/04/2023 02:19:13
+ Last Modified: 18/04/2023 12:25:38
  Modified By: realbacon
  -----
  License  : MIT
@@ -172,10 +172,10 @@ impl Player {
                 }
                 board.score()
             });
-            game_handler.push(game_thread.await);
+            game_handler.push(game_thread);
         }
         for game in game_handler {
-            let (white, black) = game.unwrap();
+            let (white, black) = game.await.unwrap();
             match white.cmp(&black) {
                 Ordering::Equal => {
                     games_result.2 += 1;
