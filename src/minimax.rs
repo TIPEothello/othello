@@ -126,11 +126,11 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     }
     best_move.1
 }
-
+/*
 pub fn minimax_tree(tree: &mut Tree, color: Case) -> &Tree {
     pub fn minimax_rec(tree_before: &Tree, tree: &mut Tree, color: Case, current: Case) -> i32 {
         if tree.is_final || tree.subtree.is_none() {
-            let val = evaluate(tree_before.cases, &tree.cases, current, tree.mov);
+            let val = evalutate(tree_before.cases, &tree.cases, current, tree.mov);
             tree.value = Some(val);
             return val;
         }
@@ -154,7 +154,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> &Tree {
     let mut best_tree = tree.subtree.unwrap().iter().find(|x| x.value.unwrap() == best).unwrap();
     return best_tree;
 }
-
+*/
 pub fn evalutate(board: &Board, turn: Case) -> i32 {
     let mut res = 0;
     for i in 0..8 {
