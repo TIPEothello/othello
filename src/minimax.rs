@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 08:43:36
+ Last Modified: 18/04/2023 09:08:3
  Modified By: realbacon
  -----
  License  : MIT
@@ -241,7 +241,8 @@ pub fn evaluate_tree(
     //println!("Range: {}", range);
 
     // Evaluation of the move based on the material count
-    res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) * 5) as isize;
+    res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as f32 * 8.0
+        / (original_score.0 + original_score.1) as f32) as isize;
     if color == Case::Black {
         res = res * -1;
     }
@@ -251,8 +252,10 @@ pub fn evaluate_tree(
     }
     // Evaluation of the move based on the number of available moves
 
-    //res -= tree.moves as isize * 5; // Moves for the enemy
-    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32 * 0.3) as isize;
+    res -= (tree.moves as f32 * (original_score.0 + original_score.1) as f32 / 13.0) as isize; // Moves for the enemy
+    res += (PLACEMENT_SCORE[move_next.0][move_next.1] as f32
+        * (original_score.0 + original_score.1) as f32
+        / 8.0) as isize;
 
     res as i32
 }
