@@ -16,6 +16,7 @@ use crate::{
     rules::enemy,
 };
 use std::fmt::{Display, Formatter};
+use rayon::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Tree {
@@ -185,6 +186,8 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         tree: &mut Tree,
         color: Case,
         current: Case,
+        mut alpha: i32,
+        mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
             let val = evaluate_tree(original_score, &tree, color, tree.mov.unwrap());
@@ -193,24 +196,35 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         }
         let mut best = if current == color { i32::MIN } else { i32::MAX };
         for subtree in tree.subtree.as_mut().unwrap() {
-            let val = minimax_rec(original_score, subtree, color, enemy(&current));
+            let val = minimax_rec(original_score, subtree, color, enemy(&current), alpha, beta);
             if color == current {
                 best = best.max(val);
+                alpha = alpha.max(val);
+                if best >= beta {
+                    break;
+                }
             } else {
                 best = best.min(val);
+                beta = beta.min(val);
+                if best <= alpha {
+                    break;
+                }
             }
+            
+
+
         }
         tree.value = Some(best);
         return best;
     }
 
-    let best = minimax_rec(tree.score, tree, color, color);
+    let best = minimax_rec(tree.score, tree, color, color, i32::MIN, i32::MAX);
     let best_tree = tree
         .subtree
         .as_ref()
         .unwrap()
-        .iter()
-        .find(|x| x.value.unwrap() == best)
+        .par_iter()
+        .find_any(|x| x.value.unwrap() == best)
         .unwrap()
         .clone();
 
