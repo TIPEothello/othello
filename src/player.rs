@@ -20,7 +20,6 @@ use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
-use rayon::prelude::IntoParallelRefIterator;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Strategy {
@@ -160,12 +159,15 @@ impl Player {
                 break;
             }
             //stdout.queue(MoveUp(if is_win { 10 } else { 11 })).unwrap();
+			println!("Playing move: {}", print_coords(board.history.moves.last().unwrap()));
         }
 
         if quit {
             println!("Quitting...");
             return;
         }
+
+		
 
         println!("{}", board);
         stdout.queue(MoveDown(10)).unwrap();

@@ -17,7 +17,16 @@ mod rules;
 
 #[tokio::main(worker_threads = 100)]
 async fn main() {
-    let mut player = player::Player::new(Some((
+
+	let mut player = player::Player::new(Some((
+		player::Strategy::Manual,
+		player::Strategy::MinimaxTree { depth: 6 },
+		
+	)));
+
+	player.progressive_play();
+
+    /*let mut player = player::Player::new(Some((
         player::Strategy::MinimaxTree { depth: 5 },
         player::Strategy::Greedy,
     )));
@@ -30,7 +39,7 @@ async fn main() {
         result.0,
         result.1 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
         result.1
-    );
+    );*/
     /*
      let mut board = board::Board::new();
     for _ in 0..4 {
