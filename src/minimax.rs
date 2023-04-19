@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 10:00:7
+ Last Modified: 19/04/2023 10:12:39
  Modified By: realbacon
  -----
  License  : MIT
@@ -148,14 +148,14 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     best_move.1
 }
 const PLACEMENT_SCORE: [[isize; 8]; 8] = [
-    [40, -25, 10, 5, 5, 10, -25, 40],
-    [-25, -25, 1, 1, 1, 1, -25, -25],
+    [60, -40, 10, 5, 5, 10, -40, 60],
+    [-40, -40, 1, 1, 1, 1, -40, -40],
     [10, 1, 5, 2, 2, 5, 1, 10],
     [5, 1, 2, 1, 1, 2, 1, 5],
     [5, 1, 2, 1, 1, 2, 1, 5],
     [10, 1, 5, 2, 2, 5, 1, 10],
-    [-25, -25, 1, 1, 1, 1, -25, -25],
-    [40, -25, 10, 5, 5, 10, -25, 40],
+    [-40, -40, 1, 1, 1, 1, -40, -40],
+    [60, -40, 10, 5, 5, 10, -40, 60],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
@@ -240,7 +240,7 @@ pub fn evaluate_tree(
 
     // Evaluation of the move based on the material count
     let mut res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as f32
-        * 64.0
+        * 128.0
         / (original_score.0 + original_score.1) as f32) as isize;
     if color == Case::Black {
         res = res * -1;
