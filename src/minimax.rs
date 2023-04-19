@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 10:26:3
+ Last Modified: 19/04/2023 05:04:57
  Modified By: realbacon
  -----
  License  : MIT
@@ -149,14 +149,14 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     best_move.1
 }
 const PLACEMENT_SCORE: [[isize; 8]; 8] = [
-    [60, -40, 10, 5, 5, 10, -40, 60],
-    [-40, -40, 1, 1, 1, 1, -40, -40],
-    [10, 1, 5, 2, 2, 5, 1, 10],
-    [5, 1, 2, 1, 1, 2, 1, 5],
-    [5, 1, 2, 1, 1, 2, 1, 5],
-    [10, 1, 5, 2, 2, 5, 1, 10],
-    [-40, -40, 1, 1, 1, 1, -40, -40],
-    [60, -40, 10, 5, 5, 10, -40, 60],
+    [500, -150, 30, 10, 10, 30, -150, 500],
+    [-150, -250, 0, 0, 0, 0, -250, -150],
+    [30, 0, 1, 2, 2, 1, 0, 30],
+    [10, 0, 2, 16, 16, 2, 0, 10],
+    [10, 0, 2, 16, 16, 2, 0, 10],
+    [30, 0, 1, 2, 2, 1, 0, 30],
+    [-150, -250, 0, 0, 0, 0, -250, -150],
+    [500, -150, 30, 10, 10, 30, -150, 500],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
@@ -249,38 +249,32 @@ pub fn evaluate_tree(
     move_next: (usize, usize),
     turn: Case,
 ) -> i32 {
-    if tree.moves == 0 {
-        // Last move evaluation
-        return if (tree.score.0 > tree.score.1) ^ (color == turn) {
-            1000
-        } else {
-            -1000
-        };
-    }
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let range: isize = 25
-        / ((original_score.0 + original_score.1 + 1) as f32).log(3.618033988749894848204586834)
-            as isize;
-    //println!("Range: {}", range);
+    let res: isize = 15 * material_count(original_score, tree, color)
+        + position_evluation(tree, color)
+        + 3 * randomness_factor();
 
-    // Evaluation of the move based on the material count
+    res as i32
+}
+
+fn material_count(original_score: (usize, usize), tree: &Tree, color: Case) -> isize {
     let mut res = (tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as isize;
     if color == Case::Black {
         res = res * -1;
     }
-    let mut 
-    if range > 0 {
-        let noise = rng.gen_range(-range..range);
-        //res += noise;
-    }
-    // Evaluation of the move based on the number of available moves
+    res
+}
 
-    //res -= (tree.moves as f32 * (original_score.0 + original_score.1) as f32 / 13.0) as isize; // Moves for the enemy
-    let ps = (PLACEMENT_SCORE[move_next.0][move_next.1] as f32
-        * (original_score.0 + original_score.1) as f32
-        / 90.0) as isize;
-    //res += ps;
-    //println!("{}", ps);
-    res as i32
+fn position_evluation(tree: &Tree, color: Case) -> isize {
+    if color == Case::White {
+        matrix_eval(&tree.cases).0 as isize
+    } else {
+        matrix_eval(&tree.cases).1 as isize
+    }
+}
+
+fn randomness_factor() -> isize {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let random: isize = rng.gen_range(-10..10);
+    random
 }
