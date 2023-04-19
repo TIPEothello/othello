@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 09:59:27
+ Last Modified: 19/04/2023 10:00:7
  Modified By: realbacon
  -----
  License  : MIT
@@ -254,7 +254,7 @@ pub fn evaluate_tree(
     //res -= (tree.moves as f32 * (original_score.0 + original_score.1) as f32 / 13.0) as isize; // Moves for the enemy
     let ps = (PLACEMENT_SCORE[move_next.0][move_next.1] as f32
         * (original_score.0 + original_score.1) as f32
-        / 64.0) as isize;
+        / 90.0) as isize;
     res += ps;
     //println!("{}", ps);
     res as i32
