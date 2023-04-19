@@ -228,6 +228,20 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
     return best_tree;
 }
 
+pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
+    let mut res = (0, 0);
+    for i in 0..8 {
+        for j in 0..8 {
+            if cases[i][j] == Case::White {
+                res.0 += PLACEMENT_SCORE[i][j];
+            } else if cases[i][j] == Case::Black {
+                res.1 += PLACEMENT_SCORE[i][j];
+            }
+        }
+    }
+    res
+}
+
 pub fn evaluate_tree(
     original_score: (usize, usize),
     tree: &Tree,
