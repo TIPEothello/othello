@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 09:50:49
+ Last Modified: 19/04/2023 10:20:2
  Modified By: realbacon
  -----
  License  : MIT
@@ -19,11 +19,11 @@ mod rules;
 async fn main() {
     let mut player = player::Player::new(Some((
         player::Strategy::Greedy,
-        player::Strategy::MinimaxTree { depth: 5 },
+        player::Strategy::MinimaxTree { depth: 4 },
     )));
     //player.progressive_play();
 
-    let result = player.play_games(1).await;
+    let result = player.play_games(100).await;
     println!(
         "Win ratio : White {}% ({}) - Black {}% ({})",
         result.0 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,

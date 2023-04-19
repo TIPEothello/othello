@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 10:14:12
+ Last Modified: 19/04/2023 10:26:3
  Modified By: realbacon
  -----
  License  : MIT
@@ -15,8 +15,8 @@ use crate::{
     board::{Board, Case},
     rules::enemy,
 };
-use std::fmt::{Display, Formatter};
 use rayon::prelude::*;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct Tree {
@@ -190,7 +190,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate_tree(original_score, &tree, color, tree.mov.unwrap());
+            let val = evaluate_tree(original_score, &tree, color, tree.mov.unwrap(), current);
             tree.value = Some(val);
             return val;
         }
@@ -210,9 +210,6 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
                     break;
                 }
             }
-            
-
-
         }
         tree.value = Some(best);
         return best;
@@ -236,15 +233,16 @@ pub fn evaluate_tree(
     tree: &Tree,
     color: Case,
     move_next: (usize, usize),
+    turn: Case,
 ) -> i32 {
-    /*if tree.moves == 0 {
+    if tree.moves == 0 {
         // Last move evaluation
         return if (tree.score.0 > tree.score.1) ^ (color == turn) {
             1000
         } else {
             -1000
         };
-    }*/
+    }
     use rand::Rng;
     let mut rng = rand::thread_rng();
     let range: isize = 25
@@ -253,15 +251,14 @@ pub fn evaluate_tree(
     //println!("Range: {}", range);
 
     // Evaluation of the move based on the material count
-    let mut res = ((tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as f32
-        * 128.0
-        / (original_score.0 + original_score.1) as f32) as isize;
+    let mut res = (tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as isize;
     if color == Case::Black {
         res = res * -1;
     }
+    let mut 
     if range > 0 {
         let noise = rng.gen_range(-range..range);
-        res += noise;
+        //res += noise;
     }
     // Evaluation of the move based on the number of available moves
 
@@ -269,7 +266,7 @@ pub fn evaluate_tree(
     let ps = (PLACEMENT_SCORE[move_next.0][move_next.1] as f32
         * (original_score.0 + original_score.1) as f32
         / 90.0) as isize;
-    res += ps;
+    //res += ps;
     //println!("{}", ps);
     res as i32
 }

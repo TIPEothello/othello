@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 18/04/2023 07:13:43
+ Last Modified: 19/04/2023 10:19:9
  Modified By: realbacon
  -----
  License  : MIT
@@ -20,6 +20,7 @@ use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
+use rayon::prelude::IntoParallelRefIterator;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Strategy {
