@@ -149,14 +149,14 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     best_move.1
 }
 const PLACEMENT_SCORE: [[isize; 8]; 8] = [
-    [128, -5, 30, 10, 10, 30, -5, 128],
-    [-5, -8, 0, 0, 0, 0, -8, -5],
-    [30, 0, 1, 2, 2, 1, 0, 30],
-    [10, 0, 2, 0, 0, 2, 0, 10],
-    [10, 0, 2, 0, 0, 2, 0, 10],
-    [30, 0, 1, 2, 2, 1, 0, 30],
-    [-5, -8, 0, 0, 0, 0, -8, -5],
-    [128, -5, 30, 10, 10, 30, -5, 128],
+    [128, -8, 16, 16, 16, 16, -8, 128],
+    [ -8, -8, -4, -4, -4, -4, -8,  -8],
+    [ 16, -4,  0,  0,  0,  0, -4,  16],
+    [ 16, -4,  0,  0,  0,  0, -4,  16],
+    [ 16, -4,  0,  0,  0,  0, -4,  16],
+    [ 16, -4,  0,  0,  0,  0, -4,  16],
+    [ -8, -8, -4, -4, -4, -4, -8,  -8],
+    [128, -8, 16, 16, 16, 16, -8, 128],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
@@ -250,7 +250,8 @@ pub fn evaluate_tree(
     turn: Case,
 ) -> i32 {
     let res: isize = 15 * material_count(original_score, tree, color)
-        + position_evluation(tree, color)
+        + position_evaluation(tree, color)
+        - ((freedom_factor(tree) * (tree.score.0 + tree.score.1) as isize) as f32 / 12.0) as isize
         + 3 * randomness_factor();
 
     res as i32
@@ -264,7 +265,7 @@ fn material_count(original_score: (usize, usize), tree: &Tree, color: Case) -> i
     res
 }
 
-fn position_evluation(tree: &Tree, color: Case) -> isize {
+fn position_evaluation(tree: &Tree, color: Case) -> isize {
     if color == Case::White {
         matrix_eval(&tree.cases).0 as isize
     } else {
@@ -277,4 +278,8 @@ fn randomness_factor() -> isize {
     let mut rng = rand::thread_rng();
     let random: isize = rng.gen_range(-10..10);
     random
+}
+
+pub fn freedom_factor(tree: &Tree) -> isize {
+    tree.moves as isize
 }

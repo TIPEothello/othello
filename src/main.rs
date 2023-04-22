@@ -17,14 +17,14 @@ mod rules;
 
 #[tokio::main(worker_threads = 100)]
 async fn main() {
-
-	/*let mut player = player::Player::new(Some((
-		player::Strategy::Greedy,
-		player::Strategy::MinimaxTree { depth: 4 },
-		
+    /*
+	let mut player = player::Player::new(Some((
+        player::Strategy::Manual,
+		player::Strategy::MinimaxTree { depth: 6 },
 	)));
-
-	player.play_games(100)*/
+    
+	player.progressive_play()
+    */
 
     let mut player = player::Player::new(Some((
         player::Strategy::Minimax { depth: 4 },
