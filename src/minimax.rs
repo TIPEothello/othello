@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 19/04/2023 05:04:57
+ Last Modified: 23/04/2023 05:39:36
  Modified By: realbacon
  -----
  License  : MIT
@@ -16,7 +16,12 @@ use crate::{
     rules::enemy,
 };
 use rayon::prelude::*;
-use std::fmt::{Display, Formatter};
+use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{Display, Formatter},
+    fs::File,
+    io::{BufReader, BufWriter},
+};
 
 #[derive(Clone, Debug)]
 pub struct Tree {
@@ -149,14 +154,14 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     best_move.1
 }
 const PLACEMENT_SCORE: [[isize; 8]; 8] = [
-    [128, -8, 16, 16, 16, 16, -8, 128],
-    [ -8, -8, -4, -4, -4, -4, -8,  -8],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ -8, -8, -4, -4, -4, -4, -8,  -8],
-    [128, -8, 16, 16, 16, 16, -8, 128],
+    [256, -8, 16, 16, 16, 16, -8, 256],
+    [-8, -8, -4, -4, -4, -4, -8, -8],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [-8, -8, -4, -4, -4, -4, -8, -8],
+    [256, -8, 16, 16, 16, 16, -8, 256],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
@@ -190,7 +195,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate_tree(original_score, &tree, color, tree.mov.unwrap(), current);
+            let val = evaluate_tree(original_score, &tree, color);
             tree.value = Some(val);
             return val;
         }
@@ -242,17 +247,52 @@ pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
     res
 }
 
-pub fn evaluate_tree(
-    original_score: (usize, usize),
-    tree: &Tree,
-    color: Case,
-    move_next: (usize, usize),
-    turn: Case,
-) -> i32 {
-    let res: isize = 15 * material_count(original_score, tree, color)
-        + position_evaluation(tree, color)
-        - ((freedom_factor(tree) * (tree.score.0 + tree.score.1) as isize) as f32 / 12.0) as isize
-        + 3 * randomness_factor();
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CoefS {
+    pub material: f32,
+    pub position: f32,
+    pub freedom: f32,
+}
+
+impl CoefS {
+    pub fn from_file(file: &str) -> CoefS {
+        fn try_file(file: &str) -> std::io::Result<CoefS> {
+            // Open a json file and try to read it
+            let file = File::open(file)?;
+            let reader = BufReader::new(file);
+            // Deserialize the json file into a Coefs Struct
+            let coefs: CoefS = serde_json::from_reader(reader)?;
+            Ok(CoefS {
+                material: coefs.material,
+                position: coefs.position,
+                freedom: coefs.freedom,
+            })
+        }
+        match try_file(file) {
+            Ok(coefs) => coefs,
+            Err(_) => CoefS {
+                material: 10.0,
+                position: 1.0,
+                freedom: 12.0,
+            },
+        }
+    }
+
+    pub fn modify_file(&self, file: &str) -> std::io::Result<()> {
+        let file = File::create(file)?;
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, self)?;
+        Ok(())
+    }
+}
+
+pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
+    let coef = CoefS::from_file("coef.json");
+
+    let res: isize = (coef.material * material_count(original_score, tree, color) as f32
+        + coef.position * position_evaluation(tree, color) as f32
+        - ((freedom_factor(tree) * (tree.score.0 + tree.score.1) as isize) as f32 / coef.freedom)
+        + 3.0 * randomness_factor() as f32) as isize;
 
     res as i32
 }
