@@ -9,7 +9,7 @@
  License  : MIT
  -----
 */
-#![allow(dead_code)]
+#![allow(dead_code, unused_variables)]
 
 use crate::{
     board::{Board, Case},

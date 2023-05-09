@@ -297,9 +297,9 @@ fn reset_test() {
     board
         .make_move(&board.available_moves(None)[0])
         .expect("Move should be legal");
-    println!("{}", board);
+    //println!("{}", board);
     board.reset(1);
-    println!("{}", board);
+    //println!("{}", board);
     assert_eq!(board.cases[3][3], Case::White);
     assert_eq!(board.cases[4][4], Case::White);
     assert_eq!(board.cases[3][4], Case::Black);

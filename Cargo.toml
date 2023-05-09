@@ -9,3 +9,6 @@ rand = {version="0.8.5",features=["std_rng"]}
 crossterm = "0.26.1"
 tokio = {version="1.27.0",features = ["full"]}
 rayon = "1.7.0"
+headless_chrome = "1.0.5"
+failure = "0.1.8"
+anyhow = "1.0.71"
