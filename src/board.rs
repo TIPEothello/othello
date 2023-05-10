@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 11/04/2023 01:48:52
+ Last Modified: 10/05/2023 11:34:56
  Modified By: realbacon
  -----
  License  : MIT
@@ -69,6 +69,16 @@ impl Board {
         board.cases[3][4] = Case::Black;
         board.cases[4][3] = Case::Black;
         board
+    }
+
+    pub fn from_cases(cases: [[Case; 8]; 8]) -> Self {
+        Board {
+            cases,
+            history: History {
+                moves: Vec::with_capacity(60),
+                history: Vec::with_capacity(60),
+            },
+        }
     }
 
     pub fn get_turn(&self) -> Case {
