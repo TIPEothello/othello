@@ -3,7 +3,7 @@
  Created Date: 10 May 2023
  Author: realbacon
  -----
- Last Modified: 10/05/2023 11:41:28
+ Last Modified: 10/05/2023 11:43:10
  Modified By: realbacon
  -----
  License  : MIT
@@ -18,7 +18,7 @@ use tokio::task::JoinHandle;
 use crate::board;
 
 pub async fn lauch_browser() -> Result<(Browser, JoinHandle<()>), Box<dyn std::error::Error>> {
-    let (mut browser, mut handler) = Browser::launch(BrowserConfig::builder().build()?).await?;
+    let (browser, mut handler) = Browser::launch(BrowserConfig::builder().build()?).await?;
     let handle = tokio::task::spawn(async move {
         while let Some(h) = handler.next().await {
             if h.is_err() {
@@ -26,7 +26,7 @@ pub async fn lauch_browser() -> Result<(Browser, JoinHandle<()>), Box<dyn std::e
             }
         }
     });
-    let page = browser.new_page("https://reversi.fr/game.php").await?;
+    browser.new_page("https://reversi.fr/game.php").await?;
 
     //browser.close().await?;
     //handle.await?;
@@ -63,6 +63,6 @@ async fn browser_test() {
     let page = page.get_mut(0).unwrap();
     let board = get_board(page).await.unwrap();
     println!("{}", board);
-    browser.close().await;
-    handle.await;
+    browser.close().await.unwrap();
+    handle.await.unwrap();
 }
