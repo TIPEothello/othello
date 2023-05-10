@@ -3,7 +3,7 @@
  Created Date: 10 May 2023
  Author: realbacon
  -----
- Last Modified: 10/05/2023 11:06:33
+ Last Modified: 10/05/2023 11:10:49
  Modified By: realbacon
  -----
  License  : MIT
@@ -24,14 +24,17 @@ pub async fn lauch_browser() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
     let page = browser.new_page("https://reversi.fr/game.php").await?;
-    let element = page.find_elements("#game-content > table > tbody > tr:nth-child(1) > td:nth-child(1) > table > tbody > tr > td").await?;
-    println!("{:?}", element);
+    let elements = page.find_elements("#game-content > table > tbody > tr:nth-child(1) > td:nth-child(1) > table > tbody > tr > td").await?;
+    for element in elements {
+        let text = element.inner_html().await?;
+        println!("{:?}", text);
+    }
     browser.close().await?;
     handle.await?;
     Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
 async fn browser_test() {
     lauch_browser().await.unwrap();
 }
