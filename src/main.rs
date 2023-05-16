@@ -15,6 +15,7 @@ mod minimax;
 mod player;
 mod rules;
 mod scraper;
+mod mcts;
 
 #[tokio::main(worker_threads = 100)]
 async fn main() {
@@ -24,7 +25,7 @@ async fn main() {
 
 
     let mut player = player::Player::new(Some((
-        player::Strategy::MinimaxTree { depth: 4 },
+        player::Strategy::Greedy,
         player::Strategy::MinimaxTree { depth: 4 },
     )));
     //player.progressive_play();
