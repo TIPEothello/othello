@@ -15,3 +15,4 @@ mod board;
 mod minimax;
 mod player;
 mod rules;
+mod scraper;

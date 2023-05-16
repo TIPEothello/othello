@@ -16,6 +16,7 @@ use std::io::stdout;
 
 use crate::board::{Board, Case};
 use crate::minimax;
+use crate::scraper::Difficulty;
 use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
@@ -29,6 +30,7 @@ pub enum Strategy {
     Manual,
     Minimax { depth: u8 },
     MinimaxTree { depth: u8 },
+    Browser { difficulty: Difficulty },
 }
 
 pub struct Player {
@@ -70,6 +72,7 @@ impl Player {
                 }
             };
             match strategy {
+                Strategy::Browser { difficulty } => todo!(),
                 Strategy::Random => {
                     let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
@@ -131,6 +134,8 @@ impl Player {
                     }
                     board.make_move(&input).unwrap();
                 }
+
+
             }
             // Wait for user to press enter
 
@@ -211,6 +216,7 @@ impl Player {
                         }
                     };
                     match strategy {
+                        Strategy::Browser { difficulty } => todo!(),
                         Strategy::Random => {
                             let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                             board.make_move(&bmove).unwrap();
