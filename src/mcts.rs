@@ -3,7 +3,7 @@
  Created Date: 23 May 2023
  Author: realbacon
  -----
- Last Modified: 23/05/2023 02:20:16
+ Last Modified: 23/05/2023 02:23:23
  Modified By: realbacon
  -----
  License  : MIT
@@ -22,7 +22,7 @@ pub struct MCTS {
     tree: Node,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Node {
     wins: i64,
     played: i64,
@@ -125,7 +125,7 @@ impl MCTS {
     }
     fn play_simulation(&mut self, iter: i32, case: Case) {
         fn rec_play(node: &Node, iter: i32, case: Case) -> (i64, i64) {
-            if node.leafs.len() > 0 {
+            if !node.leafs.is_empty() {
                 let mut re = (0, 0);
                 for node in node.leafs.iter() {
                     let r = rec_play(node, iter, case);
@@ -136,7 +136,7 @@ impl MCTS {
                 let mut wins = 0;
                 let mut played = 0;
                 for _ in 0..iter {
-                    let mut node = node.clone();
+                    let mut node = &(*node).clone();
                     let winner = MCTS::play_game_from_node(node);
                     if winner == case {
                         wins += 1;
@@ -159,7 +159,7 @@ impl MCTS {
 fn create_mcts() {
     let mut mcts = MCTS::new(Board::new());
     mcts.expand_by_depth(3);
-    let bmov = mcts.best_move(50, Case::Black);
+    let bmov = mcts.best_move(1000, Case::Black);
     println!("{:?}", bmov);
 }
 
