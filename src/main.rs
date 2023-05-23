@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 23/04/2023 05:43:58
+ Last Modified: 23/05/2023 01:35:10
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,18 +11,13 @@
 */
 
 mod board;
+mod mcts;
 mod minimax;
 mod player;
 mod rules;
-mod mcts;
 
 #[tokio::main(worker_threads = 100)]
 async fn main() {
-    
-    
-
-
-
     let mut player = player::Player::new(Some((
         player::Strategy::Greedy,
         player::Strategy::MinimaxTree { depth: 4 },
@@ -37,6 +32,4 @@ async fn main() {
         result.1 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
         result.1
     );
-
-     
 }

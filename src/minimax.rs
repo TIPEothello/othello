@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 23/04/2023 05:39:36
+ Last Modified: 23/05/2023 01:53:4
  Modified By: realbacon
  -----
  License  : MIT
@@ -150,19 +150,19 @@ pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize
     }
     best_move.1
 }
-const PLACEMENT_SCORE: [[isize; 8]; 8] = [
+pub const PLACEMENT_SCORE: [[isize; 8]; 8] = [
     [256, -8, 16, 16, 16, 16, -8, 256],
-    [ -8, -8, -4, -4, -4, -4, -8,  -8],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ 16, -4,  0,  0,  0,  0, -4,  16],
-    [ -8, -8, -4, -4, -4, -4, -8,  -8],
+    [-8, -8, -4, -4, -4, -4, -8, -8],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [16, -4, 0, 0, 0, 0, -4, 16],
+    [-8, -8, -4, -4, -4, -4, -8, -8],
     [256, -8, 16, 16, 16, 16, -8, 256],
 ];
 pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
     let turn = board.get_turn();
-        let score = board.score();
+    let score = board.score();
 
     // Evaluation of the move based on the material count
     let old_material_count = (score.0 - score.1) as isize;
@@ -228,7 +228,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
 
     best_tree
 }
-
+/// (white,black)
 pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
     let mut res = (0, 0);
     for i in 0..8 {
