@@ -14,7 +14,6 @@ mod board;
 mod minimax;
 mod player;
 mod rules;
-mod scraper;
 mod mcts;
 
 #[tokio::main(worker_threads = 100)]
@@ -41,25 +40,3 @@ async fn main() {
 
      
 }
-/* 
-use minimax::CoefS;
-async fn gradiant_descent() {
-    let step = 0.6;
-    let h = 0.0001;
-    let mut player = player::Player::new(Some((
-        player::Strategy::Minimax { depth: 4 },
-        player::Strategy::MinimaxTree { depth: 4 },
-    )));
-    for _ in 0..40 {
-        let mut coef = CoefS::from_file("coef.json");
-        let init_res = player.play_games(400).await;
-        // Modify the file coef.json
-        let ini = coef.material;
-        coef.material += h;
-        coef.modify_file("coef.json").unwrap();
-        let new_res = player.play_games(400).await;
-        let der = (new_res.1 - init_res.1) as f32 / h;
-        coef.material = ini - step * der;
-    }
-}
-*/

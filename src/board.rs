@@ -189,7 +189,7 @@ impl Board {
     }
 
     pub fn reset(&mut self, num: usize) {
-        if num == 0 || self.history.history.len() == 0 {
+        if num == 0 || self.history.history.is_empty() {
             return;
         }
         if num >= self.history.history.len() {

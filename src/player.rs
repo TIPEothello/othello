@@ -16,12 +16,10 @@ use std::io::stdout;
 
 use crate::board::{Board, Case};
 use crate::minimax;
-use crate::scraper::Difficulty;
 use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
-use serde_json;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Strategy {
@@ -30,7 +28,6 @@ pub enum Strategy {
     Manual,
     Minimax { depth: u8 },
     MinimaxTree { depth: u8 },
-    Browser { difficulty: Difficulty },
 }
 
 pub struct Player {
@@ -72,7 +69,6 @@ impl Player {
                 }
             };
             match strategy {
-                Strategy::Browser { difficulty } => todo!(),
                 Strategy::Random => {
                     let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
@@ -110,10 +106,10 @@ impl Player {
                     let input = input.trim();
                     let input = input
                         .split("")
-                        .filter(|s| s.len() > 0)
+                        .filter(|s| !s.is_empty())
                         .collect::<Vec<&str>>();
                     // Input can be A1 or a1
-                    if input.len() == 0 {
+                    if input.is_empty() {
                         continue;
                     }
                     if input.len() != 2 {
@@ -202,7 +198,7 @@ impl Player {
         let mut games_result = (0, 0, 0); // White Black Draw
 
         let mut game_handler = Vec::new();
-        let strat = self.strategy.clone();
+        let strat = self.strategy;
         let mut rng = OsRng::default();
         for _ in 0..n {
             let game_thread = spawn(async move {
@@ -216,7 +212,6 @@ impl Player {
                         }
                     };
                     match strategy {
-                        Strategy::Browser { difficulty } => todo!(),
                         Strategy::Random => {
                             let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                             board.make_move(&bmove).unwrap();
@@ -226,7 +221,7 @@ impl Player {
                         }
                         Strategy::Minimax { depth } => {
                             let outcomes = minimax::calculate_outcomes(&board, depth);
-                            if outcomes.len() == 0 {
+                            if outcomes.is_empty() {
                                 break;
                             }
                             let best_move = minimax::minimax(&outcomes, &mut board);
@@ -248,12 +243,16 @@ impl Player {
         }
         for game in game_handler {
             let (white, black) = game.await.unwrap();
-            if white > black {
-                games_result.0 += 1;
-            } else if white < black {
-                games_result.1 += 1;
-            } else {
-                games_result.2 += 1;
+            match white.cmp(&black) {
+                Ordering::Greater => {
+                    games_result.0 += 1;
+                },
+                Ordering::Less => {
+                    games_result.1 += 1;
+                },
+                Ordering::Equal => {
+                    games_result.2 += 1;
+                },
             }
         }
         games_result
