@@ -243,54 +243,18 @@ pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
     res
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CoefS {
-    pub material: f32,
-    pub position: f32,
-    pub freedom: f32,
-}
-
-impl CoefS {
-    pub fn from_file(file: &str) -> CoefS {
-        fn try_file(file: &str) -> std::io::Result<CoefS> {
-            // Open a json file and try to read it
-            let file = File::open(file)?;
-            let reader = BufReader::new(file);
-            // Deserialize the json file into a Coefs Struct
-            let coefs: CoefS = serde_json::from_reader(reader)?;
-            Ok(CoefS {
-                material: coefs.material,
-                position: coefs.position,
-                freedom: coefs.freedom,
-            })
-        }
-        match try_file(file) {
-            Ok(coefs) => coefs,
-            Err(_) => CoefS {
-                material: 10.0,
-                position: 1.0,
-                freedom: 12.0,
-            },
-        }
-    }
-
-    pub fn modify_file(&self, file: &str) -> std::io::Result<()> {
-        let file = File::create(file)?;
-        let writer = BufWriter::new(file);
-        serde_json::to_writer(writer, self)?;
-        Ok(())
-    }
-}
-
 pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
-    let coef = CoefS::from_file("coef.json");
-
-    let res: isize = (coef.material * material_count(original_score, tree, color) as f32
-        + coef.position * position_evaluation(tree, color) as f32
-        - ((freedom_factor(tree) * (tree.score.0 + tree.score.1) as isize) as f32 / coef.freedom)
-        + 3.0 * randomness_factor() as f32) as isize;
-
-    res as i32
+    let score = tree.score;
+    let filled = score.0 + score.1;
+    let balance = if color == Case::Black { score.1 as i32 - score.0 as i32 } else { score.0 as i32 - score.1 as i32 };
+    if tree.moves == 0 {
+        (10000 + balance) * (balance).signum()
+    } else {
+        let mut result = balance << (filled >> 4);
+        let matrix = matrix_eval(&tree.cases);
+        result += if color == Case::Black { matrix.1 as i32 - matrix.0 as i32 } else { matrix.0 as i32 - matrix.1 as i32 };
+        result
+    }
 }
 
 fn material_count(original_score: (usize, usize), tree: &Tree, color: Case) -> isize {
