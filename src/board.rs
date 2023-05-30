@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 10/05/2023 11:34:56
+ Last Modified: 30/05/2023 01:38:11
  Modified By: realbacon
  -----
  License  : MIT
@@ -52,6 +52,7 @@ pub const DIRECTIONS: [(i8, i8); 8] = [
     (0, -1),
     (1, -1),
 ];
+
 impl Board {
     /// Create a new board
     /// # Returns

@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 23/05/2023 01:53:4
+ Last Modified: 30/05/2023 01:41:28
  Modified By: realbacon
  -----
  License  : MIT
@@ -246,13 +246,21 @@ pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
 pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
     let score = tree.score;
     let filled = score.0 + score.1;
-    let balance = if color == Case::Black { score.1 as i32 - score.0 as i32 } else { score.0 as i32 - score.1 as i32 };
+    let balance = if color == Case::Black {
+        score.1 as i32 - score.0 as i32
+    } else {
+        score.0 as i32 - score.1 as i32
+    };
     if tree.moves == 0 {
         (10000 + balance) * (balance).signum()
     } else {
         let mut result = balance << (filled >> 4);
         let matrix = matrix_eval(&tree.cases);
-        result += if color == Case::Black { matrix.1 as i32 - matrix.0 as i32 } else { matrix.0 as i32 - matrix.1 as i32 };
+        result += if color == Case::Black {
+            matrix.1 as i32 - matrix.0 as i32
+        } else {
+            matrix.0 as i32 - matrix.1 as i32
+        };
         result
     }
 }

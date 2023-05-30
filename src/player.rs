@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 23/04/2023 05:12:9
+ Last Modified: 30/05/2023 01:15:11
  Modified By: realbacon
  -----
  License  : MIT
@@ -15,6 +15,7 @@ use std::cmp::Ordering;
 use std::io::stdout;
 
 use crate::board::{Board, Case};
+use crate::mcts;
 use crate::minimax;
 use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
@@ -28,6 +29,7 @@ pub enum Strategy {
     Manual,
     Minimax { depth: u8 },
     MinimaxTree { depth: u8 },
+    //MCTS { depth: i8 },
 }
 
 pub struct Player {
@@ -69,6 +71,12 @@ impl Player {
                 }
             };
             match strategy {
+                /*Strategy::MCTS { depth } => {
+                    let mut mcts = mcts::MCTS::new(board.clone());
+                    mcts.expand_by_depth(*depth);
+                    let bmov = mcts.best_move(50, Case::Black);
+                    board.make_move(&bmov).unwrap();
+                }*/
                 Strategy::Random => {
                     let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                     board.make_move(&bmove).unwrap();
@@ -130,8 +138,6 @@ impl Player {
                     }
                     board.make_move(&input).unwrap();
                 }
-
-
             }
             // Wait for user to press enter
 
@@ -212,6 +218,12 @@ impl Player {
                         }
                     };
                     match strategy {
+                        /*Strategy::MCTS { depth } => {
+                            let mut mcts = mcts::MCTS::new(board.clone());
+                            mcts.expand_by_depth(depth);
+                            let bmov = mcts.best_move(100, Case::Black);
+                            board.make_move(&bmov).unwrap();
+                        }*/
                         Strategy::Random => {
                             let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
                             board.make_move(&bmove).unwrap();
@@ -246,13 +258,13 @@ impl Player {
             match white.cmp(&black) {
                 Ordering::Greater => {
                     games_result.0 += 1;
-                },
+                }
                 Ordering::Less => {
                     games_result.1 += 1;
-                },
+                }
                 Ordering::Equal => {
                     games_result.2 += 1;
-                },
+                }
             }
         }
         games_result

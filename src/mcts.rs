@@ -3,7 +3,7 @@
  Created Date: 23 May 2023
  Author: realbacon
  -----
- Last Modified: 23/05/2023 02:23:23
+ Last Modified: 30/05/2023 02:24:13
  Modified By: realbacon
  -----
  License  : MIT
@@ -14,143 +14,117 @@
 
 use std::fmt::Debug;
 
-use crate::board::{self, Board, Case};
-
+use crate::board::{Board, Case};
+use crate::minimax::PLACEMENT_SCORE;
 // Implement Monte Carlo Tree Search
 #[derive(Debug)]
 pub struct MCTS {
-    tree: Node,
+    tree: Vec<Node>,
+    board: Board,
+    color: Case,
 }
 
 #[derive(Debug, Clone)]
 struct Node {
+    parent: Option<Box<Node>>,
     wins: i64,
     played: i64,
     leafs: Vec<Node>,
-    board: Board,
-}
-
-impl std::fmt::Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn display_rec(
-            node: &Node,
-            depth: i8,
-            f: &mut std::fmt::Formatter<'_>,
-        ) -> std::fmt::Result {
-            writeln!(f, "{}", node.board.to_string())?;
-            for n in node.leafs.iter() {
-                display_rec(n, depth + 1, f)?;
-            }
-            Ok(())
-        }
-        display_rec(self, 0, f)
-    }
+    legal_moves: Vec<(usize, usize)>,
+    parent_move: Option<(usize, usize)>,
+    depth: usize,
+    untried_action: Vec<(usize, usize)>,
 }
 
 impl MCTS {
     pub fn new(board: Board) -> Self {
+        let color = board.get_turn();
         MCTS {
-            tree: Node {
+            tree: Vec::new(),
+            board,
+            color,
+        }
+    }
+
+    fn play_to_node(&mut self, node: &Node) {
+        if let Some(p) = node.parent.as_ref() {
+            self.play_to_node(p.as_ref());
+            let m = p.parent_move.unwrap();
+            self.board.make_move(&m).unwrap();
+        }
+    }
+
+    fn expand_node(&mut self, node: &mut Node) {
+        self.play_to_node(node);
+        for mov in self.board.available_moves(None).iter() {
+            self.board.make_move(mov).unwrap();
+            let m = self.board.available_moves(None);
+            node.leafs.push(Node {
                 wins: 0,
                 played: 0,
                 leafs: Vec::new(),
-                board: board,
-            },
+                legal_moves: m.clone(),
+                untried_action: m,
+                parent: Some(Box::new(node.clone())),
+                parent_move: Some(*mov),
+                depth: node.depth + 1,
+            });
+            self.board.reset(1);
+        }
+        self.board.reset(node.depth - 1);
+    }
+
+    pub fn init_first_depth(&mut self) {
+        let legal_actions = self.board.available_moves(None);
+        for mov in legal_actions.iter() {
+            self.board.make_move(mov).unwrap();
+            let m = self.board.available_moves(None);
+            self.tree.push(Node {
+                wins: 0,
+                played: 0,
+                leafs: Vec::new(),
+                legal_moves: m.clone(),
+                untried_action: m,
+                parent: None,
+                parent_move: Some(*mov),
+                depth: 1,
+            });
+            self.board.reset(1);
         }
     }
 
-    pub fn expand_by_depth(&mut self, depth: i8) {
-        fn expand_rec(node: &mut Node, depth: i8) {
-            if depth == 0 {
-                return;
+    fn select_in_layer(&mut self, layer: Vec<Node>) -> Vec<Node> {
+        let mut best = Vec::new();
+        let mut best_score = 0.0;
+        for node in layer {
+            if node.is_terminal() {
+                best.push(node);
+                continue;
             }
-            let moves = node.board.available_moves(None);
-            for m in moves {
-                let mut board = node.board.clone();
-                board.make_move(&m).unwrap();
-                node.leafs.push(Node {
-                    wins: 0,
-                    played: 0,
-                    leafs: Vec::new(),
-                    board,
-                });
-            }
-            for n in node.leafs.iter_mut() {
-                expand_rec(n, depth - 1);
+            let score = node.wins as f64 / node.played as f64
+                + (PLACEMENT_SCORE[node.parent_move.unwrap().0][node.parent_move.unwrap().1]
+                    as f64
+                    / 100.0);
+            if score > best_score {
+                best_score = score;
+                best = vec![node.clone()];
+            } else if score == best_score {
+                best.push(node.clone());
             }
         }
-        expand_rec(&mut self.tree, depth)
+        best
+    }
+}
+
+impl Node {
+    pub fn is_terminal(&self) -> bool {
+        self.legal_moves.is_empty()
     }
 
-    fn play_game_from_node(node: &Node) -> Case {
-        let mut board = node.board.clone();
-        loop {
-            let moves = board.available_moves(None);
-            if moves.is_empty() {
-                break;
-            }
-            let turn = board.get_turn();
-            let mut bestmov: ((usize, usize), isize) = ((0, 0), isize::MIN);
-            for mov in moves.iter() {
-                let mut board = board.clone();
-                board.make_move(mov).unwrap();
-                let ev = position_evaluation(&board, turn);
-                if ev > bestmov.1 {
-                    bestmov = (*mov, ev);
-                    break;
-                }
-            }
-            board.make_move(&bestmov.0).unwrap();
-        }
-        let s = board.score();
-        if s.0 > s.1 {
-            Case::White
-        } else if s.0 < s.1 {
-            Case::Black
-        } else {
-            Case::Empty
-        }
-    }
-    pub fn best_move(&mut self, iter: i32, case: Case) -> (usize, usize) {
-        self.play_simulation(iter, case);
-        let mut bestmov: ((usize, usize), f32) = ((0, 0), f32::MIN);
-        for node in self.tree.leafs.iter() {
-            let ev = node.wins as f32 / node.played as f32;
-            println!("{}", ev);
-            if ev > bestmov.1 {
-                bestmov = (*node.board.history.moves.last().unwrap(), ev);
-            }
-        }
-        bestmov.0
-    }
-    fn play_simulation(&mut self, iter: i32, case: Case) {
-        fn rec_play(node: &Node, iter: i32, case: Case) -> (i64, i64) {
-            if !node.leafs.is_empty() {
-                let mut re = (0, 0);
-                for node in node.leafs.iter() {
-                    let r = rec_play(node, iter, case);
-                    re = (re.0 + r.0, re.1 + r.1);
-                }
-                return re;
-            } else {
-                let mut wins = 0;
-                let mut played = 0;
-                for _ in 0..iter {
-                    let mut node = &(*node).clone();
-                    let winner = MCTS::play_game_from_node(node);
-                    if winner == case {
-                        wins += 1;
-                    }
-                    played += 1;
-                }
-                return (wins, played);
-            }
-        }
-
-        for node in self.tree.leafs.iter_mut() {
-            let (wins, played) = rec_play(node, iter, case);
-            node.wins += wins;
-            node.played += played;
+    pub fn backpropagate(&mut self, result: i8) {
+        self.played += 1;
+        if self.parent.is_some() {
+            self.parent.as_mut().unwrap().backpropagate(result);
         }
     }
 }
@@ -158,9 +132,7 @@ impl MCTS {
 #[test]
 fn create_mcts() {
     let mut mcts = MCTS::new(Board::new());
-    mcts.expand_by_depth(3);
-    let bmov = mcts.best_move(1000, Case::Black);
-    println!("{:?}", bmov);
+    mcts.init_first_depth();
 }
 
 use crate::minimax::matrix_eval;
@@ -171,4 +143,10 @@ fn position_evaluation(board: &Board, case: Case) -> isize {
         Case::Black => ev.1,
         _ => unreachable!(),
     }
+    /*
+    match case {
+        Case::White => board.score().0 as isize - board.score().1 as isize,
+        Case::Black => board.score().1 as isize - board.score().0 as isize,
+        _ => unreachable!(),
+    }*/
 }
