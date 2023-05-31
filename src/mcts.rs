@@ -9,6 +9,7 @@
  License  : MIT
  -----
 */
+#![allow(dead_code)]
 
 // Monte Carlo Tree Search
 

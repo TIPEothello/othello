@@ -9,7 +9,7 @@
  License  : MIT
  -----
 */
-#![allow(dead_code)]
+#![allow(dead_code, unused_imports)]
 
 use std::cmp::Ordering;
 use std::io::stdout;
