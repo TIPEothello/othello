@@ -61,8 +61,8 @@ impl Board {
         let mut board = Board {
             cases: [[Case::Empty; 8]; 8],
             history: History {
-                moves: Vec::with_capacity(60),
-                history: Vec::with_capacity(60),
+                moves: Vec::<(usize, usize)>::with_capacity(60),
+                history: Vec::<[[Case; 8]; 8]>::with_capacity(60),
             },
         };
         board.cases[3][3] = Case::White;
@@ -76,8 +76,8 @@ impl Board {
         Board {
             cases,
             history: History {
-                moves: Vec::with_capacity(60),
-                history: Vec::with_capacity(60),
+                moves: Vec::<(usize, usize)>::with_capacity(60),
+                history: Vec::<[[Case; 8]; 8]>::with_capacity(60),
             },
         }
     }
@@ -217,6 +217,38 @@ impl Board {
         }
         Ok(())
     }
+
+    pub fn to_u64(&self) -> (u64, u64) {
+        let mut res1: u64 = 0;
+        let mut res2: u64 = 0;
+        for i in 0..8 {
+            for j in 0..8 {
+                res1 |= (self.cases[i][j] != Case::Empty) as u64;
+                res2 |= (self.cases[i][j] == Case::Black) as u64;
+                if i == j && j == 7 {
+                    continue;
+                }
+                res1 <<= 1;
+                res2 <<= 1;
+            }
+        }
+        (res1, res2)
+    }
+
+    pub fn from_u64(input: (u64, u64)) -> Self {
+        let mut cases: [[Case; 8]; 8] = [[Case::Empty; 8]; 8];
+        for i in 0..8 {
+            for j in 0..8 {
+                let k = (1_u64 << (64 - 8*i - j - 1)) as u64;
+                if (input.0 & k) != 0 {
+                    cases[i][j] = if (input.1 & k) != 0 { Case::Black } else { Case::White }
+                }
+            }
+        }
+        return Board::from_cases(cases)
+    }
+
+    
 }
 
 impl Display for Board {
@@ -275,6 +307,16 @@ impl Display for Board {
         write!(f, "{}", string)
     }
 }
+
+#[test]
+    fn test_u64() {
+        let board = Board::new();
+        let value = board.to_u64();
+        assert_eq!(value.0, 0x0000001818000000);
+        assert_eq!(value.1, 0x0000000810000000);
+        let remade = Board::from_u64((0x000f001818000000, 0x000a000810000000));
+        println!("{}", remade);
+    }
 
 #[test]
 fn make_move_test() {
