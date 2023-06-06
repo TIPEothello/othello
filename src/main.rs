@@ -19,8 +19,8 @@ mod rules;
 #[tokio::main(worker_threads = 100)]
 async fn main() {
     let mut player = player::Player::new(Some((
-        player::Strategy::Manual,
-        player::Strategy::MinimaxTree { depth: 6 },
+        player::Strategy::Greedy,
+        player::Strategy::MinimaxTree { depth: 4 },
     )));
     player.progressive_play();
     /*let result = player.play_games(100);
