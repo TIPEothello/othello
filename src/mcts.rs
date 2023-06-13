@@ -13,6 +13,13 @@
 
 // Monte Carlo Tree Search
 
+/*
+IMPORTANT :
+- UCT : https://en.wikipedia.org/wiki/Monte_Carlo_tree_search#Exploration_and_exploitation
+
+*/
+
+
 use std::fmt::Debug;
 
 use crate::board::{Board, Case};
@@ -117,6 +124,8 @@ impl MCTS {
     }
 }
 
+const EXPLORATION_PARAMETER: f32 = 1.41421356;
+
 impl Node {
     pub fn is_terminal(&self) -> bool {
         self.legal_moves.is_empty()
@@ -126,6 +135,14 @@ impl Node {
         self.played += 1;
         if self.parent.is_some() {
             self.parent.as_mut().unwrap().backpropagate(result);
+        }
+    }
+
+    pub fn choose_UCT(&self) {
+        let mut _max = f32::MIN;
+        for node in self.leafs.iter() {
+            let val = node.wins as f32 / node.played as f32 + EXPLORATION_PARAMETER * f32::sqrt(f32::ln(node.played as f32) / node.played as f32);
+            _max = f32::max(val, _max);
         }
     }
 }
