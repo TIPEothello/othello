@@ -1,170 +1,109 @@
 /*
  File: mcts.rs
- Created Date: 23 May 2023
+ Created Date: 13 Jun 2023
  Author: realbacon
  -----
- Last Modified: 30/05/2023 02:24:13
+ Last Modified: 20/06/2023 02:24:30
  Modified By: realbacon
  -----
  License  : MIT
  -----
 */
-#![allow(dead_code)]
-
-// Monte Carlo Tree Search
-
-/*
-IMPORTANT :
-- UCT : https://en.wikipedia.org/wiki/Monte_Carlo_tree_search#Exploration_and_exploitation
-
-*/
-
-
-use std::fmt::Debug;
-
+#[allow(non_snake_case)]
 use crate::board::{Board, Case};
-use crate::minimax::PLACEMENT_SCORE;
-// Implement Monte Carlo Tree Search
-#[derive(Debug)]
-pub struct MCTS {
-    tree: Vec<Node>,
-    board: Board,
-    color: Case,
-}
-
-#[derive(Debug, Clone)]
-struct Node {
-    parent: Option<Box<Node>>,
-    wins: i64,
-    played: i64,
-    leafs: Vec<Node>,
-    legal_moves: Vec<(usize, usize)>,
-    parent_move: Option<(usize, usize)>,
-    depth: usize,
-    untried_action: Vec<(usize, usize)>,
-}
-
-impl MCTS {
-    pub fn new(board: Board) -> Self {
-        let color = board.get_turn();
-        MCTS {
-            tree: Vec::new(),
-            board,
-            color,
-        }
-    }
-
-    fn play_to_node(&mut self, node: &Node) {
-        if let Some(p) = node.parent.as_ref() {
-            self.play_to_node(p.as_ref());
-            let m = p.parent_move.unwrap();
-            self.board.make_move(&m).unwrap();
-        }
-    }
-
-    fn expand_node(&mut self, node: &mut Node) {
-        self.play_to_node(node);
-        for mov in self.board.available_moves(None).iter() {
-            self.board.make_move(mov).unwrap();
-            let m = self.board.available_moves(None);
-            node.leafs.push(Node {
-                wins: 0,
-                played: 0,
-                leafs: Vec::new(),
-                legal_moves: m.clone(),
-                untried_action: m,
-                parent: Some(Box::new(node.clone())),
-                parent_move: Some(*mov),
-                depth: node.depth + 1,
-            });
-            self.board.reset(1);
-        }
-        self.board.reset(node.depth - 1);
-    }
-
-    pub fn init_first_depth(&mut self) {
-        let legal_actions = self.board.available_moves(None);
-        for mov in legal_actions.iter() {
-            self.board.make_move(mov).unwrap();
-            let m = self.board.available_moves(None);
-            self.tree.push(Node {
-                wins: 0,
-                played: 0,
-                leafs: Vec::new(),
-                legal_moves: m.clone(),
-                untried_action: m,
-                parent: None,
-                parent_move: Some(*mov),
-                depth: 1,
-            });
-            self.board.reset(1);
-        }
-    }
-
-    fn select_in_layer(&mut self, layer: Vec<Node>) -> Vec<Node> {
-        let mut best = Vec::new();
-        let mut best_score = 0.0;
-        for node in layer {
-            if node.is_terminal() {
-                best.push(node);
-                continue;
-            }
-            let score = node.wins as f64 / node.played as f64
-                + (PLACEMENT_SCORE[node.parent_move.unwrap().0][node.parent_move.unwrap().1]
-                    as f64
-                    / 100.0);
-            if score > best_score {
-                best_score = score;
-                best = vec![node.clone()];
-            } else if score == best_score {
-                best.push(node.clone());
-            }
-        }
-        best
-    }
-}
 
 const EXPLORATION_PARAMETER: f32 = 1.41421356;
 
-impl Node {
-    pub fn is_terminal(&self) -> bool {
-        self.legal_moves.is_empty()
-    }
+#[derive(Debug)]
+struct Node {
+    played: u32,
+    wins: u32,
+    action: (usize, usize),
+    turn: Case,
+    state: (u64, u64),
+    children: Vec<Node>,
+    possible_moves: Vec<(usize, usize)>,
+    is_terminal: bool,
+}
+struct MCTS {
+    root: Vec<Node>,
+    player: Case,
+}
 
-    pub fn backpropagate(&mut self, result: i8) {
-        self.played += 1;
-        if self.parent.is_some() {
-            self.parent.as_mut().unwrap().backpropagate(result);
+impl MCTS {
+    pub fn new(board: (u64, u64)) -> MCTS {
+        let mut init_nodes = Vec::new();
+        let mut board = Board::from_u64(board);
+        let player = board.get_turn();
+        let moves = board.available_moves(None);
+        for mov in moves {
+            board.make_move(&mov).unwrap();
+            init_nodes.push(Node {
+                played: 0,
+                wins: 0,
+                action: mov,
+                turn: board.get_turn(),
+                state: board.to_u64(),
+                children: Vec::new(),
+                possible_moves: board.available_moves(None),
+                is_terminal: false,
+            });
+            board.reset(1);
+        }
+        MCTS {
+            root: init_nodes,
+            player,
         }
     }
 
-    pub fn choose_UCT(&self) {
-        let mut _max = f32::MIN;
-        for node in self.leafs.iter() {
-            let val = node.wins as f32 / node.played as f32 + EXPLORATION_PARAMETER * f32::sqrt(f32::ln(node.played as f32) / node.played as f32);
-            _max = f32::max(val, _max);
+    fn selection(root: &Vec<Node>) -> Vec<usize> {
+        let mut res = Vec::new();
+        fn select_rec(path: &mut Vec<usize>, root: &Vec<Node>) {
+            let mut nodes = root;
+            for i in 0..path.len() {
+                nodes = &nodes[path[i]].children;
+            }
+            let idx = choose_UCT(nodes);
+            path.push(idx);
+            if nodes[idx].children.len() != 0 {
+                select_rec(path, nodes);
+            }
+        }
+        select_rec(&mut res, root);
+        res
+    }
+
+    fn explore(path: &mut Vec<usize>, root: &mut Vec<Node>) {
+        let mut root = root[path[0]];
+
+        for i in 0..path.len() {
+            let a = root.last().unwrap();
+            root = &mut root[path[i]];
         }
     }
 }
 
+fn choose_UCT(nodes: &Vec<Node>) -> usize {
+    let mut _max = f32::MIN;
+    let mut max_index: usize = 0;
+
+    for (i, node) in nodes.iter().enumerate() {
+        println!("{:?}", node);
+        let val = node.wins as f32 / node.played as f32
+            + EXPLORATION_PARAMETER * f32::sqrt(f32::ln(node.played as f32) / node.played as f32);
+        println!("{}", val);
+        if val > _max {
+            _max = val;
+            max_index = i;
+        }
+    }
+    max_index
+}
 #[test]
-fn create_mcts() {
-    let mut mcts = MCTS::new(Board::new());
-    mcts.init_first_depth();
-}
-
-use crate::minimax::matrix_eval;
-fn position_evaluation(board: &Board, case: Case) -> isize {
-    let ev = matrix_eval(&board.cases);
-    match case {
-        Case::White => ev.0,
-        Case::Black => ev.1,
-        _ => unreachable!(),
-    }
-    /*
-    match case {
-        Case::White => board.score().0 as isize - board.score().1 as isize,
-        Case::Black => board.score().1 as isize - board.score().0 as isize,
-        _ => unreachable!(),
-    }*/
+fn test_mcts() {
+    let mut board = Board::new();
+    let mcts = MCTS::new(board.to_u64());
+    println!("{:?}", mcts.root);
+    let selection_path = MCTS::selection(&mcts.root);
+    println!("{:?}", selection_path)
 }

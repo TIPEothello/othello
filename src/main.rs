@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 30/05/2023 01:45:50
+ Last Modified: 13/06/2023 01:26:40
  Modified By: realbacon
  -----
  License  : MIT
@@ -19,8 +19,8 @@ mod rules;
 #[tokio::main(worker_threads = 100)]
 async fn main() {
     let mut player = player::Player::new(Some((
-        player::Strategy::Greedy,
-        player::Strategy::MinimaxTree { depth: 4 },
+        player::Strategy::MinimaxTree { depth: 6 },
+        player::Strategy::Manual,
     )));
     player.progressive_play();
     /*let result = player.play_games(100);

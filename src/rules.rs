@@ -1,3 +1,15 @@
+/*
+ File: rules.rs
+ Created Date: 04 Apr 2023
+ Author: realbacon
+ -----
+ Last Modified: 20/06/2023 01:50:14
+ Modified By: realbacon
+ -----
+ License  : MIT
+ -----
+*/
+
 use crate::board::{Case, DIRECTIONS};
 
 /// Check if a move is legal
@@ -58,7 +70,7 @@ pub fn check_direction(
     let mut y = start.1 + direction.1;
     while (0..8).contains(&x)
         && (0..8).contains(&y)
-        && board[x as usize][y as usize] == enemy(color)
+        && board[x as usize][y as usize] == color.opponent()
     {
         x += direction.0;
         y += direction.1;
@@ -80,7 +92,7 @@ pub fn check_direction_with_gain(
     let mut gain = 0;
     while (0..8).contains(&x)
         && (0..8).contains(&y)
-        && board[x as usize][y as usize] == enemy(color)
+        && board[x as usize][y as usize] == color.opponent()
     {
         x += direction.0;
         y += direction.1;
@@ -93,12 +105,4 @@ pub fn check_direction_with_gain(
             && ((x - start.0).abs() > 1 || (y - start.1).abs() > 1),
         gain,
     )
-}
-
-pub fn enemy(color: &Case) -> Case {
-    match color {
-        Case::White => Case::Black,
-        Case::Black => Case::White,
-        Case::Empty => Case::Empty,
-    }
 }

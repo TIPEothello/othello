@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 30/05/2023 01:38:11
+ Last Modified: 20/06/2023 01:50:47
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,7 +11,7 @@
 */
 #![allow(dead_code)]
 
-use crate::rules::{check_direction, enemy, is_legal_move, is_legal_move_with_gain};
+use crate::rules::{check_direction, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -19,6 +19,16 @@ pub enum Case {
     Empty,
     White,
     Black,
+}
+
+impl Case {
+    pub fn opponent(&self) -> Case {
+        match self {
+            Case::Empty => Case::Empty,
+            Case::White => Case::Black,
+            Case::Black => Case::White,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -114,7 +124,7 @@ impl Board {
             ) {
                 let mut x = bmove.0 as i8 + direction.0;
                 let mut y = bmove.1 as i8 + direction.1;
-                while self.cases[x as usize][y as usize] == enemy(&color) {
+                while self.cases[x as usize][y as usize] == (&color).opponent() {
                     self.cases[x as usize][y as usize] = color;
                     x += direction.0;
                     y += direction.1;
@@ -239,16 +249,18 @@ impl Board {
         let mut cases: [[Case; 8]; 8] = [[Case::Empty; 8]; 8];
         for i in 0..8 {
             for j in 0..8 {
-                let k = (1_u64 << (64 - 8*i - j - 1)) as u64;
+                let k = (1_u64 << (64 - 8 * i - j - 1)) as u64;
                 if (input.0 & k) != 0 {
-                    cases[i][j] = if (input.1 & k) != 0 { Case::Black } else { Case::White }
+                    cases[i][j] = if (input.1 & k) != 0 {
+                        Case::Black
+                    } else {
+                        Case::White
+                    }
                 }
             }
         }
-        return Board::from_cases(cases)
+        return Board::from_cases(cases);
     }
-
-    
 }
 
 impl Display for Board {
@@ -309,14 +321,14 @@ impl Display for Board {
 }
 
 #[test]
-    fn test_u64() {
-        let board = Board::new();
-        let value = board.to_u64();
-        assert_eq!(value.0, 0x0000001818000000);
-        assert_eq!(value.1, 0x0000000810000000);
-        let remade = Board::from_u64((0x000f001818000000, 0x000a000810000000));
-        println!("{}", remade);
-    }
+fn test_u64() {
+    let board = Board::new();
+    let value = board.to_u64();
+    assert_eq!(value.0, 0x0000001818000000);
+    assert_eq!(value.1, 0x0000000810000000);
+    let remade = Board::from_u64((0x000f001818000000, 0x000a000810000000));
+    println!("{}", remade);
+}
 
 #[test]
 fn make_move_test() {

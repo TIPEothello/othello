@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 30/05/2023 01:41:28
+ Last Modified: 20/06/2023 01:51:4
  Modified By: realbacon
  -----
  License  : MIT
@@ -11,14 +11,9 @@
 */
 #![allow(dead_code, unused_variables)]
 
-use crate::{
-    board::{Board, Case},
-    rules::enemy,
-};
+use crate::board::{Board, Case};
 use rayon::prelude::*;
-use std::{
-    fmt::{Display, Formatter},
-};
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct Tree {
@@ -194,7 +189,14 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         }
         let mut best = if current == color { i32::MIN } else { i32::MAX };
         for subtree in tree.subtree.as_mut().unwrap() {
-            let val = minimax_rec(original_score, subtree, color, enemy(&current), alpha, beta);
+            let val = minimax_rec(
+                original_score,
+                subtree,
+                color,
+                (&current).opponent(),
+                alpha,
+                beta,
+            );
             if color == current {
                 best = best.max(val);
                 alpha = alpha.max(val);
@@ -249,7 +251,7 @@ pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -
         score.0 as i32 - score.1 as i32
     };
     if tree.moves == 0 {
-        (10000 + balance) * (balance).signum()
+        (10000 + balance.abs()) * (balance).signum()
     } else {
         let mut result = balance << (filled >> 4);
         let matrix = matrix_eval(&tree.cases);
