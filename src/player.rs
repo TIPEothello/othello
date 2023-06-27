@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 30/05/2023 01:15:11
+ Last Modified: 27/06/2023 01:03:56
  Modified By: realbacon
  -----
  License  : MIT
@@ -75,24 +75,24 @@ impl Player {
                     let mut mcts = mcts::MCTS::new(board.clone());
                     mcts.expand_by_depth(*depth);
                     let bmov = mcts.best_move(50, Case::Black);
-                    board.make_move(&bmov).unwrap();
+                    board.play_move(&bmov).unwrap();
                 }*/
                 Strategy::Random => {
                     let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
-                    board.make_move(&bmove).unwrap();
+                    board.play_move(&bmove).unwrap();
                 }
                 Strategy::Greedy => {
-                    board.make_move_with_highest_gain().unwrap();
+                    board.play_move_with_highest_gain().unwrap();
                 }
                 Strategy::Minimax { depth } => {
                     let outcomes = minimax::calculate_outcomes(&board, *depth);
                     let best_move = minimax::minimax(&outcomes, &mut board);
-                    board.make_move(&best_move).unwrap();
+                    board.play_move(&best_move).unwrap();
                 }
                 Strategy::MinimaxTree { depth } => {
                     let mut tree = minimax::Tree::from_board(&mut board, None, *depth);
                     let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
-                    board.make_move(&best_tree.mov.unwrap()).unwrap();
+                    board.play_move(&best_tree.mov.unwrap()).unwrap();
                 }
                 Strategy::Manual => {
                     auto = false;
@@ -136,7 +136,7 @@ impl Player {
                         println!("Invalid move");
                         continue;
                     }
-                    board.make_move(&input).unwrap();
+                    board.play_move(&input).unwrap();
                 }
             }
             // Wait for user to press enter
@@ -222,14 +222,14 @@ impl Player {
                             let mut mcts = mcts::MCTS::new(board.clone());
                             mcts.expand_by_depth(depth);
                             let bmov = mcts.best_move(100, Case::Black);
-                            board.make_move(&bmov).unwrap();
+                            board.play_move(&bmov).unwrap();
                         }*/
                         Strategy::Random => {
                             let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
-                            board.make_move(&bmove).unwrap();
+                            board.play_move(&bmove).unwrap();
                         }
                         Strategy::Greedy => {
-                            board.make_move_with_highest_gain().unwrap();
+                            board.play_move_with_highest_gain().unwrap();
                         }
                         Strategy::Minimax { depth } => {
                             let outcomes = minimax::calculate_outcomes(&board, depth);
@@ -237,12 +237,12 @@ impl Player {
                                 break;
                             }
                             let best_move = minimax::minimax(&outcomes, &mut board);
-                            board.make_move(&best_move).unwrap();
+                            board.play_move(&best_move).unwrap();
                         }
                         Strategy::MinimaxTree { depth } => {
                             let mut tree = minimax::Tree::from_board(&mut board, None, depth);
                             let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
-                            board.make_move(&best_tree.mov.unwrap()).unwrap();
+                            board.play_move(&best_tree.mov.unwrap()).unwrap();
                         }
                         Strategy::Manual => {
                             panic!("Manual strategy is not supported in play_games");

@@ -7,7 +7,6 @@
 
 On selectionne le noeud avec le meilleur potentiel
 
-
 2. Expansion
 
 On étend le noeud choisi avec les coups possibles

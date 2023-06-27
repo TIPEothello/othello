@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 20/06/2023 01:50:47
+ Last Modified: 27/06/2023 02:13:20
  Modified By: realbacon
  -----
  License  : MIT
@@ -63,10 +63,12 @@ pub const DIRECTIONS: [(i8, i8); 8] = [
     (1, -1),
 ];
 
+const MID: [(usize, usize); 4] = [(3, 3), (3, 4), (4, 3), (4, 4)];
+
 impl Board {
     /// Create a new board
     /// # Returns
-    /// * A new board
+    /// * A new board with start cases filled in
     pub fn new() -> Self {
         let mut board = Board {
             cases: [[Case::Empty; 8]; 8],
@@ -82,16 +84,36 @@ impl Board {
         board
     }
 
+    /// Create a board from a 2d-array of cases (8x8)
+    /// # Returns
+    /// * Board
     pub fn from_cases(cases: [[Case; 8]; 8]) -> Self {
         Board {
             cases,
             history: History {
-                moves: Vec::<(usize, usize)>::with_capacity(60),
+                moves: {
+                    let mut v = Vec::<(usize, usize)>::with_capacity(60);
+                    for i in 0..8 {
+                        for j in 0..8 {
+                            if cases[i][j] != Case::Empty && !MID.contains(&(i, j)) {
+                                v.push((i, j));
+                            }
+                        }
+                    }
+                    v
+                },
                 history: Vec::<[[Case; 8]; 8]>::with_capacity(60),
             },
         }
     }
 
+    pub fn from_moves(moves: &[(usize, usize)]) -> Self {
+        let mut board = Board::new();
+        board.play_moves(moves).unwrap();
+        return board;
+    }
+
+    /// Get the current turn
     pub fn get_turn(&self) -> Case {
         if self.history.moves.len() % 2 == 0 {
             Case::Black
@@ -100,18 +122,20 @@ impl Board {
         }
     }
 
-    /// Make a move on the board
+    /// Play a move on the board
     /// # Arguments
     /// * `bmove` - The move to make
-    /// * `color` - The color of the player
     /// # Returns
     /// * `Ok(())` if the move is legal
-    /// * `Err(())` if the move is illegal
-    pub fn make_move(&mut self, bmove: &(usize, usize)) -> Result<(), &str> {
+    /// * `Err(String)` if the move is illegal
+    pub fn play_move(&mut self, bmove: &(usize, usize)) -> Result<(), String> {
         let color = self.get_turn();
-
         if !is_legal_move(&self.cases, *bmove, &color) {
-            return Err("Illegal move");
+            let mut s = String::new();
+            s.push_str("Illegal move : ");
+            s.push_str(&format!("{:?}", bmove));
+
+            return Err(s);
         }
         self.cases[bmove.0][bmove.1] = color;
 
@@ -136,10 +160,10 @@ impl Board {
         Ok(())
     }
 
-    pub fn make_move_with_highest_gain(&mut self) -> Result<(), &str> {
+    pub fn play_move_with_highest_gain(&mut self) -> Result<(), String> {
         let moves = self.available_moves_with_gain();
         if moves.is_empty() {
-            return Err("No moves available");
+            return Err("No moves available".to_string());
         }
         let mut highest_gain = 0;
         let mut highest_move = (0, 0);
@@ -149,7 +173,7 @@ impl Board {
                 highest_move = m;
             }
         }
-        self.make_move(&highest_move)
+        self.play_move(&highest_move)
     }
 
     /// Returns a vector of all the available moves for a given color
@@ -219,7 +243,7 @@ impl Board {
 
     pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<(), &str> {
         for m in moves.iter() {
-            let mover = self.make_move(m);
+            let mover = self.play_move(m);
             if mover.is_err() {
                 println!("Error: {:?} \n{}", moves, self);
                 panic!("");
@@ -331,10 +355,10 @@ fn test_u64() {
 }
 
 #[test]
-fn make_move_test() {
+fn play_move_test() {
     let mut board = Board::new();
     board
-        .make_move(&(0, 0))
+        .play_move(&(0, 0))
         .expect_err("Move should not be legal");
     assert_eq!(board.cases[0][0], Case::Empty); // Check that the move was not made
                                                 // Check the initial board
@@ -360,7 +384,7 @@ fn available_moves_test() {
 fn reset_test() {
     let mut board = Board::new();
     board
-        .make_move(&board.available_moves(None)[0])
+        .play_move(&board.available_moves(None)[0])
         .expect("Move should be legal");
     //println!("{}", board);
     board.reset(1);

@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 20/06/2023 01:51:4
+ Last Modified: 27/06/2023 01:03:57
  Modified By: realbacon
  -----
  License  : MIT
@@ -42,7 +42,7 @@ impl Tree {
         } else {
             let mut subtrees = Vec::new();
             for mov in &moves {
-                board.make_move(mov).unwrap();
+                board.play_move(mov).unwrap();
                 subtrees.push(Tree::from_board(board, Some(*mov), depth - 1));
                 board.reset(1);
             }
@@ -158,7 +158,7 @@ pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
 
     // Evaluation of the move based on the material count
     let old_material_count = (score.0 - score.1) as isize;
-    board.make_move(&move_).unwrap();
+    board.play_move(&move_).unwrap();
 
     let score = board.score();
     let new_material_count = (score.0 - score.1) as isize;
