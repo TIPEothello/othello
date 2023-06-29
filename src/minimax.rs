@@ -251,12 +251,13 @@ pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -
         score.0 as i32 - score.1 as i32
     };
     if tree.moves == 0 {
-        (10000 + balance.abs()) * (balance).signum()
+        10000 * balance.signum() + balance
     } else {
-        let mut result = balance << (filled >> 4);
+		let state = filled / 16; // Découpe la partie en plusieurs phases
+        let mut result = balance << state; // On attribue une importance grandissante au score en fonction de l'avancement de la partie
         let matrix = matrix_eval(&tree.cases);
         result += if color == Case::Black {
-            matrix.1 as i32 - matrix.0 as i32
+            matrix.1 as i32 - matrix.0 as i32 // Différence de score de placement
         } else {
             matrix.0 as i32 - matrix.1 as i32
         };
