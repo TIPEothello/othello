@@ -16,6 +16,7 @@ mod minimax;
 mod player;
 mod rules;
 
+
 #[tokio::main(worker_threads = 100)]
 async fn main() {
     let mut player = player::Player::new(Some((
@@ -23,12 +24,12 @@ async fn main() {
         player::Strategy::Manual,
     )));
     player.progressive_play();
-    /*let result = player.play_games(100);
+    let result = player.play_games(100).await;
     println!(
         "Win ratio : White {}% ({}) - Black {}% ({})",
         result.0 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
         result.0,
         result.1 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
         result.1
-    );*/
+    );
 }

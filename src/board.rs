@@ -115,11 +115,12 @@ impl Board {
 
     /// Get the current turn
     pub fn get_turn(&self) -> Case {
-        if self.history.moves.len() % 2 == 0 {
-            Case::Black
-        } else {
-            Case::White
-        }
+        let sum = self.score().0 + self.score().1;
+		return if sum % 2 == 0 {
+			Case::Black
+		} else {
+			Case::White
+		}
     }
 
     /// Play a move on the board

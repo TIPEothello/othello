@@ -12,8 +12,9 @@
 #![allow(non_snake_case, unused_variables, dead_code)]
 
 use crate::board::{Board, Case};
+use rand::seq::SliceRandom;
 
-const EXPLORATION_PARAMETER: f32 = 1.41421356;
+const EXPLORATION_PARAMETER: f32 = 1.414213562373095;
 
 #[derive(Debug)]
 struct Node {
@@ -71,7 +72,7 @@ struct MCTS {
     player: Case,
 }
 
-const SIMULATION_ITERATION: usize = 50;
+
 
 impl MCTS {
     pub fn new(board: Board) -> MCTS {
@@ -103,14 +104,12 @@ impl MCTS {
         let mut res = Vec::new();
         fn select_rec(path: &mut Vec<usize>, root: &Vec<Node>) {
             let mut nodes = root;
-            for i in 0..path.len() {
-                println!("{:?}", nodes[path[i]]);
-                nodes = &nodes[path[i]].children;
-            }
-            let idx = choose_UCT(nodes);
+            
+			let idx = choose_UCT(nodes);
             path.push(idx);
+            nodes = &nodes[idx].children;
 
-            if nodes[idx].children.len() != 0 {
+            if !nodes.is_empty() {
                 select_rec(path, nodes);
             }
         }
@@ -118,12 +117,12 @@ impl MCTS {
         res
     }
 
-    fn simulation(node: &mut Node, player: Case) -> (u32, u32) {
+    fn simulation(node: &mut Node, player: Case, iterations: u32) -> (u32, u32) {
         let mut win = 0;
         let mut played = 0;
         for child in node.children.iter_mut() {
             if !child.is_terminal {
-                for _ in 0..SIMULATION_ITERATION {
+                for _ in 0..iterations {
                     let mut board = child.state.clone();
                     let mut moves = board.available_moves(None);
                     while moves.len() != 0 {
@@ -224,14 +223,37 @@ fn choose_UCT(nodes: &Vec<Node>) -> usize {
     }
     max_index
 }
+
+fn best_move(nodes: &Vec<Node>) -> usize {
+	let mut _max = f32::MIN;
+    let mut max_index: usize = 0;
+
+    for (i, node) in nodes.iter().enumerate() {
+        let val = if node.played > 0 {
+            node.wins as f32 / node.played as f32
+        } else {
+            0.0
+        };
+        if val > _max {
+            _max = val;
+            max_index = i;
+        }
+    }
+    max_index
+}
 #[test]
 fn test_mcts() {
-    let board = Board::new();
+	let mut rng = rand::thread_rng();
+    let mut board = Board::new();
+	for i in 0..30 {
+		board.play_move(board.available_moves(None).choose(&mut rng).unwrap()).unwrap();
+	}
+	println!("{}", board);
     let mut mcts = MCTS::new(board.clone());
-    for _ in 0..10 {
+    for _ in 0..20 {
         let selection_path = MCTS::selection(&mcts.root);
         let mut extended_node = MCTS::extend(&selection_path, &mut mcts.root);
-        let (w, p) = MCTS::simulation(&mut extended_node, Case::Black);
+        let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 150);
         MCTS::backpropagate(&mut mcts.root, selection_path, w, p);
     }
     println!("{}", mcts);
