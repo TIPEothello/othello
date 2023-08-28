@@ -16,10 +16,9 @@ mod minimax;
 mod player;
 mod rules;
 
-
-#[tokio::main(worker_threads = 100)]
+#[tokio::main(worker_threads = 10, flavor = "multi_thread")]
 async fn main() {
-    let mut player = player::Player::new(Some((
+    /*let mut player = player::Player::new(Some((
         player::Strategy::MinimaxTree { depth: 6 },
         player::Strategy::Manual,
     )));
@@ -31,5 +30,7 @@ async fn main() {
         result.0,
         result.1 as f32 / (result.0 + result.1 + result.2) as f32 * 100.0,
         result.1
-    );
+    );*/
+    use mcts::test_mcts;
+    test_mcts().await;
 }

@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 27/06/2023 02:13:20
+ Last Modified: 4/07/2023 09:23:16
  Modified By: realbacon
  -----
  License  : MIT
@@ -116,11 +116,11 @@ impl Board {
     /// Get the current turn
     pub fn get_turn(&self) -> Case {
         let sum = self.score().0 + self.score().1;
-		return if sum % 2 == 0 {
-			Case::Black
-		} else {
-			Case::White
-		}
+        return if sum % 2 == 0 {
+            Case::Black
+        } else {
+            Case::White
+        };
     }
 
     /// Play a move on the board
@@ -129,7 +129,7 @@ impl Board {
     /// # Returns
     /// * `Ok(())` if the move is legal
     /// * `Err(String)` if the move is illegal
-    pub fn play_move(&mut self, bmove: &(usize, usize)) -> Result<(), String> {
+    pub fn play_move(&mut self, bmove: &(usize, usize)) -> Result<(usize, usize), String> {
         let color = self.get_turn();
         if !is_legal_move(&self.cases, *bmove, &color) {
             let mut s = String::new();
@@ -158,10 +158,10 @@ impl Board {
         }
         self.history.moves.push(*bmove);
         self.history.history.push(self.cases);
-        Ok(())
+        Ok(*bmove)
     }
 
-    pub fn play_move_with_highest_gain(&mut self) -> Result<(), String> {
+    pub fn play_move_with_highest_gain(&mut self) -> Result<(usize, usize), String> {
         let moves = self.available_moves_with_gain();
         if moves.is_empty() {
             return Err("No moves available".to_string());
@@ -208,7 +208,7 @@ impl Board {
         moves
     }
 
-    /// Returns the score of the board (whiet,black)
+    /// Returns the score of the board (white,black)
     pub fn score(&self) -> (usize, usize) {
         let mut white = 0;
         let mut black = 0;
