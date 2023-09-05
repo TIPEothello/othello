@@ -124,50 +124,35 @@ impl MCTS {
         res
     }
 
-    fn simulation(node: &mut Node, player: Case, iterations: u32) -> (u32, u32) {
+    fn simulation(node: &mut Node, player: Case) -> Case {
+        let mut board = node.state.clone();
+        let mut moves = board.available_moves(None);
         let mut win = 0;
-        let mut played = 0;
-        for child in node.children.iter_mut() {
-            if !child.is_terminal {
-                for _ in 0..iterations {
-                    let mut board = child.state.clone();
-                    let mut moves = board.available_moves(None);
-                    while moves.len() != 0 {
-                        let idx = rand::random::<usize>() % moves.len();
-                        board.play_move(&moves[idx]).unwrap();
-                        moves = board.available_moves(None);
-                    }
-                    let winner = {
-                        let score = board.score();
-                        if score.0 > score.1 {
-                            Case::White
-                        } else if score.0 < score.1 {
-                            Case::Black
-                        } else {
-                            Case::Empty
-                        }
-                    };
-                    if winner == player && child.turn == player {
-                        child.wins += 1;
-                        win += 1
-                    }
-                    child.played += 1;
-                    played += 1;
-                }
-                /*if winner == player.opponent() && child.turn == player.opponent() {
-                    child.wins += 1;
-                    win += 1
-                } else */
-            }
+        while moves.len() != 0 {
+            let idx = rand::random::<usize>() % moves.len();
+            board.play_move(&moves[idx]).unwrap();
+            moves = board.available_moves(None);
         }
-        (win, played)
+        let winner = {
+            let score = board.score();
+            if score.0 > score.1 {
+                Case::White
+            } else if score.0 < score.1 {
+                Case::Black
+            } else {
+                Case::Empty
+            }
+        };
+        winner
     }
 
-    fn backpropagate(root: &mut Vec<Node>, path: Vec<usize>, wins: u32, played: u32) {
+    fn backpropagate(root: &mut Vec<Node>, path: Vec<usize>, winner: Case) {
         let mut nodes = root;
         for i in 0..path.len() {
-            nodes[path[i]].wins += wins;
-            nodes[path[i]].played += played;
+            if nodes[path[i]].turn == winner {
+                nodes[path[i]].wins += 1;
+            }
+            nodes[path[i]].played += 1;
             nodes = &mut nodes[path[i]].children;
         }
     }
@@ -256,7 +241,7 @@ fn choose_UCT(nodes: &Vec<Node>, parent_played: f32) -> usize {
     for (i, node) in nodes.iter().enumerate() {
         let val = if node.played > 0 {
             node.wins as f32 / node.played as f32
-                + EXPLORATION_PARAMETER * (f32::ln(parent_played as f32) / node.played as f32)
+                + EXPLORATION_PARAMETER * (f32::log10(parent_played as f32) / node.played as f32)
         } else {
             1.0
         };
@@ -286,10 +271,14 @@ fn best_move(nodes: &Vec<Node>) -> usize {
     max_index
 }
 
-pub(crate) async fn test_mcts_mthreads() {
+pub(crate) fn test_mcts_mthreads() {
     let mut w = 0;
+    use crate::minimax;
     use rayon::prelude::*;
-
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
     let results: Vec<(usize, usize)> = (0..100)
         .into_par_iter()
         .map(|_| {
@@ -298,11 +287,20 @@ pub(crate) async fn test_mcts_mthreads() {
             //println!("Started thread ");
             let mut mcts = MCTS::new(board.clone());
             loop {
-                for _ in 0..4 {
+                let time = std::time::Instant::now();
+                loop {
+                    //println!("test 1");
                     let selection_path = mcts.selection();
+                    //println!("test 2");
                     let mut extended_node = MCTS::extend(&selection_path, &mut mcts.root);
-                    let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 400);
-                    MCTS::backpropagate(&mut mcts.root, selection_path, w, p);
+                    //println!("test 3");
+                    let w = MCTS::simulation(&mut extended_node, Case::Black);
+                    //println!("test 4");
+                    MCTS::backpropagate(&mut mcts.root, selection_path, w);
+                    //println!("test 5");
+                    if time.elapsed().as_millis() >= 400 {
+                        break;
+                    }
                 }
                 let best = best_move(&mcts.root);
 
@@ -313,11 +311,15 @@ pub(crate) async fn test_mcts_mthreads() {
                     break;
                 }
                 mcts = mcts.rebase(best);
-                use crate::minimax;
+
                 let mut tree = minimax::Tree::from_board(&mut board, None, 4);
                 let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
 
                 let m = board.play_move(&best_tree.mov.unwrap()).unwrap();
+                //let m = board.play_move_with_highest_gain().unwrap();
+                //let moves = board.available_moves(None);
+                //let idx = rand::random::<usize>() % moves.len();
+                //let m = board.play_move(&moves[idx]).unwrap();
                 if board.available_moves(None).len() == 0 {
                     break;
                 }
@@ -339,7 +341,7 @@ pub(crate) async fn test_mcts_mthreads() {
 
 pub(crate) fn test_mcts() {
     let mut w = 0;
-
+    use crate::minimax;
     let results: Vec<(usize, usize)> = (0..100)
         .into_iter()
         .map(|_| {
@@ -348,27 +350,35 @@ pub(crate) fn test_mcts() {
             //println!("Started thread ");
             let mut mcts = MCTS::new(board.clone());
             loop {
-                for _ in 0..5 {
+                let time = std::time::Instant::now();
+                loop {
                     let selection_path = mcts.selection();
                     let mut extended_node = MCTS::extend(&selection_path, &mut mcts.root);
-                    let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 300);
-                    MCTS::backpropagate(&mut mcts.root, selection_path, w, p);
+                    let w = MCTS::simulation(&mut extended_node, Case::Black);
+                    MCTS::backpropagate(&mut mcts.root, selection_path, w);
+                    if time.elapsed().as_millis() >= 1000 {
+                        break;
+                    }
                 }
                 let best = best_move(&mcts.root);
 
                 let bestn = &mcts.root[best];
 
                 board.play_move(&bestn.action).unwrap();
-                if board.available_moves(None).is_empty() {
+                if board.available_moves(None).len() == 0 {
                     break;
                 }
                 mcts = mcts.rebase(best);
-                use crate::minimax;
+
                 let mut tree = minimax::Tree::from_board(&mut board, None, 4);
                 let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
 
                 let m = board.play_move(&best_tree.mov.unwrap()).unwrap();
-                if board.available_moves(None).is_empty() {
+                //let m = board.play_move_with_highest_gain().unwrap();
+                //let moves = board.available_moves(None);
+                //let idx = rand::random::<usize>() % moves.len();
+                //let m = board.play_move(&moves[idx]).unwrap();
+                if board.available_moves(None).len() == 0 {
                     break;
                 }
                 let i = mcts.find_move(m);
