@@ -15,9 +15,8 @@
 use core::panic;
 
 use crate::board::{Board, Case};
-use rand::{seq::SliceRandom, Rng};
 
-const EXPLORATION_PARAMETER: f32 = 1.414213562373095;
+const EXPLORATION_PARAMETER: f32 = std::f32::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -103,18 +102,25 @@ impl MCTS {
 
     fn selection(&self) -> Vec<usize> {
         let mut res = Vec::new();
-        fn select_rec(path: &mut Vec<usize>, root: &Vec<Node>) {
+        fn select_rec(path: &mut Vec<usize>, root: &Vec<Node>, parent: Option<&Node>) {
             let mut nodes = root;
 
-            let idx = choose_UCT(nodes);
+            let parent_played = if let Some(node) = parent {
+                node.played
+            } else {
+                nodes.iter().fold(0, |acc, n| acc + n.played)
+            } as f32;
+
+            let idx = choose_UCT(nodes, parent_played);
             path.push(idx);
-            nodes = &nodes[idx].children;
+            let node = &nodes[idx];
+            nodes = &node.children;
 
             if !nodes.is_empty() {
-                select_rec(path, nodes);
+                select_rec(path, nodes, Some(node));
             }
         }
-        select_rec(&mut res, &self.root);
+        select_rec(&mut res, &self.root, None);
         res
     }
 
@@ -243,15 +249,14 @@ impl IndexPath for Vec<Node> {
         &mut nodes[path[path.len() - 1]]
     }
 }
-fn choose_UCT(nodes: &Vec<Node>) -> usize {
+fn choose_UCT(nodes: &Vec<Node>, parent_played: f32) -> usize {
     let mut _max = f32::MIN;
     let mut max_index: usize = 0;
 
     for (i, node) in nodes.iter().enumerate() {
         let val = if node.played > 0 {
             node.wins as f32 / node.played as f32
-                + EXPLORATION_PARAMETER
-                    * f32::sqrt(f32::ln(node.played as f32) / node.played as f32)
+                + EXPLORATION_PARAMETER * (f32::ln(parent_played as f32) / node.played as f32)
         } else {
             1.0
         };
