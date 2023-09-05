@@ -256,7 +256,7 @@ fn choose_UCT(nodes: &Vec<Node>, parent_played: f32) -> usize {
     for (i, node) in nodes.iter().enumerate() {
         let val = if node.played > 0 {
             node.wins as f32 / node.played as f32
-                + EXPLORATION_PARAMETER * (f32::ln(parent_played as f32) / node.played as f32)
+                + EXPLORATION_PARAMETER * f32::sqrt(f32::ln(parent_played as f32) / node.played as f32)
         } else {
             1.0
         };
