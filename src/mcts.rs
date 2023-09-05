@@ -1,3 +1,15 @@
+/*
+ File: mcts.rs
+ Created Date: 05 Sep 2023
+ Author: realbacon
+ -----
+ Last Modified: 5/09/2023 03:15:2
+ Modified By: realbacon
+ -----
+ License  : MIT
+ -----
+*/
+
 #![allow(non_snake_case, unused_variables, dead_code)]
 
 use core::panic;
@@ -269,7 +281,7 @@ fn best_move(nodes: &Vec<Node>) -> usize {
     max_index
 }
 
-pub(crate) async fn test_mcts() {
+pub(crate) async fn test_mcts_mthreads() {
     let mut w = 0;
     use rayon::prelude::*;
 
@@ -281,10 +293,10 @@ pub(crate) async fn test_mcts() {
             //println!("Started thread ");
             let mut mcts = MCTS::new(board.clone());
             loop {
-                for _ in 0..5 {
+                for _ in 0..4 {
                     let selection_path = mcts.selection();
                     let mut extended_node = MCTS::extend(&selection_path, &mut mcts.root);
-                    let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 300);
+                    let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 400);
                     MCTS::backpropagate(&mut mcts.root, selection_path, w, p);
                 }
                 let best = best_move(&mcts.root);
@@ -302,6 +314,56 @@ pub(crate) async fn test_mcts() {
 
                 let m = board.play_move(&best_tree.mov.unwrap()).unwrap();
                 if board.available_moves(None).len() == 0 {
+                    break;
+                }
+                let i = mcts.find_move(m);
+                mcts = mcts.rebase(i);
+            }
+            println!("{:?}", board.score());
+            board.score()
+        })
+        .collect();
+
+    for r in results {
+        if r.0 <= r.1 {
+            w += 1;
+        }
+    }
+    println!("{w}")
+}
+
+pub(crate) fn test_mcts() {
+    let mut w = 0;
+
+    let results: Vec<(usize, usize)> = (0..100)
+        .into_iter()
+        .map(|_| {
+            let mut board = Board::new();
+
+            //println!("Started thread ");
+            let mut mcts = MCTS::new(board.clone());
+            loop {
+                for _ in 0..5 {
+                    let selection_path = mcts.selection();
+                    let mut extended_node = MCTS::extend(&selection_path, &mut mcts.root);
+                    let (w, p) = MCTS::simulation(&mut extended_node, Case::Black, 300);
+                    MCTS::backpropagate(&mut mcts.root, selection_path, w, p);
+                }
+                let best = best_move(&mcts.root);
+
+                let bestn = &mcts.root[best];
+
+                board.play_move(&bestn.action).unwrap();
+                if board.available_moves(None).is_empty() {
+                    break;
+                }
+                mcts = mcts.rebase(best);
+                use crate::minimax;
+                let mut tree = minimax::Tree::from_board(&mut board, None, 4);
+                let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
+
+                let m = board.play_move(&best_tree.mov.unwrap()).unwrap();
+                if board.available_moves(None).is_empty() {
                     break;
                 }
                 let i = mcts.find_move(m);

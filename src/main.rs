@@ -3,7 +3,7 @@
  Created Date: 21 Mar 2023
  Author: realbacon
  -----
- Last Modified: 13/06/2023 01:26:40
+ Last Modified: 5/09/2023 03:12:11
  Modified By: realbacon
  -----
  License  : MIT
@@ -32,5 +32,5 @@ async fn main() {
         result.1
     );*/
     use mcts::test_mcts;
-    test_mcts().await;
+    test_mcts();
 }
