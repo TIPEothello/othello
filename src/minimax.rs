@@ -57,6 +57,10 @@ impl Tree {
             }
         }
     }
+
+	pub fn best_move(&mut self, color: Case) -> (usize, usize) {
+		minimax(self, color).mov.unwrap()
+	}
 }
 
 impl Display for Tree {
@@ -82,66 +86,7 @@ impl Display for Tree {
     }
 }
 
-/// A function  that takes a board and a turn and returns a vector of all possible outcomes
-/// # Arguments
-/// * `board` - The board to calculate the outcomes from
-/// * `turn` - The turn to calculate the outcomes for
-///
-pub fn calculate_outcomes(board: &Board, depth: u8) -> Vec<Vec<(usize, usize)>> {
-    let mut board = board.clone();
-    let outcomes = vec![vec![]];
-    // calculate all the possible outcomes for the given depth
 
-    fn calc_rec(
-        board: &mut Board,
-        depth: u8,
-        outcomes: Vec<Vec<(usize, usize)>>,
-    ) -> Vec<Vec<(usize, usize)>> {
-        let mut outcomes = outcomes;
-        if depth == 0 {
-            //println!("test {:?}", outcomes);
-            return outcomes;
-        }
-
-        let mut new_outcomes = Vec::new();
-        for _ in 0..outcomes.len() {
-            //println!("test1 {:?}", outcomes);
-            let outcome = outcomes.pop().unwrap_or(vec![]);
-
-            //println!("test2 {:?}", outcome);
-            board.play_moves(&outcome).expect("Played illegal moves");
-            for (x, y) in board.available_moves(Some(board.get_turn())) {
-                let mut new_outcome = outcome.clone();
-                new_outcome.push((x, y));
-                new_outcomes.push(new_outcome);
-            }
-            //println!("{:?}", new_outcomes);
-            board.reset(outcome.len());
-        }
-        calc_rec(board, depth - 1, new_outcomes)
-    }
-    calc_rec(&mut board, depth, outcomes)
-}
-
-pub fn minimax(outcomes: &Vec<Vec<(usize, usize)>>, board: &mut Board) -> (usize, usize) {
-    let mut best_move = (f32::MIN, (0, 0));
-    let mut turn = 1;
-    for outcome in outcomes {
-        let mut score: f32 = 0.0;
-
-        for item in outcome {
-            let ev = evaluate(board, *item) as f32;
-            score += ev * turn as f32;
-            turn *= -1;
-        }
-        board.reset(outcome.len());
-
-        if score > best_move.0 {
-            best_move = (score, outcome[0]);
-        }
-    }
-    best_move.1
-}
 pub const PLACEMENT_SCORE: [[isize; 8]; 8] = [
     [256, -8, 16, 16, 16, 16, -8, 256],
     [-8, -8, -4, -4, -4, -4, -8, -8],
@@ -152,28 +97,8 @@ pub const PLACEMENT_SCORE: [[isize; 8]; 8] = [
     [-8, -8, -4, -4, -4, -4, -8, -8],
     [256, -8, 16, 16, 16, 16, -8, 256],
 ];
-pub fn evaluate(board: &mut Board, move_: (usize, usize)) -> i32 {
-    let turn = board.get_turn();
-    let score = board.score();
 
-    // Evaluation of the move based on the material count
-    let old_material_count = (score.0 - score.1) as isize;
-    board.play_move(&move_).unwrap();
-
-    let score = board.score();
-    let new_material_count = (score.0 - score.1) as isize;
-    let res: isize = if turn == Case::White {
-        (new_material_count - old_material_count) * 3
-    } else {
-        old_material_count - new_material_count
-    };
-    //res -= board.available_moves(None).len() as isize * 5;
-    //res += (PLACEMENT_SCORE[move_.0][move_.1] as f32) as isize;
-
-    res as i32
-}
-
-pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
+pub fn minimax(tree: &mut Tree, color: Case) -> Tree {
     pub fn minimax_rec(
         original_score: (usize, usize),
         tree: &mut Tree,
@@ -183,7 +108,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
         mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate_tree(original_score, tree, color);
+            let val = evaluate(original_score, tree, color);
             tree.value = Some(val);
             return val;
         }
@@ -193,7 +118,7 @@ pub fn minimax_tree(tree: &mut Tree, color: Case) -> Tree {
                 original_score,
                 subtree,
                 color,
-                (&current).opponent(),
+                current.opponent(),
                 alpha,
                 beta,
             );
@@ -242,7 +167,7 @@ pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
     res
 }
 
-pub fn evaluate_tree(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
+pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
     let score = tree.score;
     let filled = score.0 + score.1;
     let balance = if color == Case::Black {

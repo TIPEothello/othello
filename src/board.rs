@@ -21,6 +21,17 @@ pub enum Case {
     Black,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EndState {
+	Winner(Case)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum BoardState {
+	Ongoing,
+	Ended(EndState)
+}
+
 impl Case {
     pub fn opponent(&self) -> Case {
         match self {
@@ -110,17 +121,17 @@ impl Board {
     pub fn from_moves(moves: &[(usize, usize)]) -> Self {
         let mut board = Board::new();
         board.play_moves(moves).unwrap();
-        return board;
+        board
     }
 
     /// Get the current turn
     pub fn get_turn(&self) -> Case {
         let sum = self.score().0 + self.score().1;
-        return if sum % 2 == 0 {
+        if sum % 2 == 0 {
             Case::Black
         } else {
             Case::White
-        };
+        }
     }
 
     /// Play a move on the board
@@ -129,7 +140,7 @@ impl Board {
     /// # Returns
     /// * `Ok(())` if the move is legal
     /// * `Err(String)` if the move is illegal
-    pub fn play_move(&mut self, bmove: &(usize, usize)) -> Result<(usize, usize), String> {
+    pub fn play_move(&mut self, bmove: &(usize, usize)) -> Result<BoardState, String> {
         let color = self.get_turn();
         if !is_legal_move(&self.cases, *bmove, &color) {
             let mut s = String::new();
@@ -149,7 +160,7 @@ impl Board {
             ) {
                 let mut x = bmove.0 as i8 + direction.0;
                 let mut y = bmove.1 as i8 + direction.1;
-                while self.cases[x as usize][y as usize] == (&color).opponent() {
+                while self.cases[x as usize][y as usize] == color.opponent() {
                     self.cases[x as usize][y as usize] = color;
                     x += direction.0;
                     y += direction.1;
@@ -158,10 +169,22 @@ impl Board {
         }
         self.history.moves.push(*bmove);
         self.history.history.push(self.cases);
-        Ok(*bmove)
+
+
+		Ok(if self.available_moves(None).is_empty() {
+			match self.score() {
+				(x, y) if x > y => BoardState::Ended(EndState::Winner(Case::White)),
+				(x, y) if x < y => BoardState::Ended(EndState::Winner(Case::Black)),
+				_ => BoardState::Ended(EndState::Winner(Case::Empty))
+			}
+		} else {
+			BoardState::Ongoing
+		})
+
+        
     }
 
-    pub fn play_move_with_highest_gain(&mut self) -> Result<(usize, usize), String> {
+    pub fn move_with_highest_gain(&self) -> Result<(usize, usize), String> {
         let moves = self.available_moves_with_gain();
         if moves.is_empty() {
             return Err("No moves available".to_string());
@@ -174,7 +197,7 @@ impl Board {
                 highest_move = m;
             }
         }
-        self.play_move(&highest_move)
+        Ok(highest_move)
     }
 
     /// Returns a vector of all the available moves for a given color
@@ -242,15 +265,20 @@ impl Board {
         self.history.moves.truncate(self.history.moves.len() - num);
     }
 
-    pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<(), &str> {
+    pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<BoardState, &str> {
+		if moves.is_empty() {
+			panic!("bro...")
+		}
+		let mut last_move = BoardState::Ongoing;
         for m in moves.iter() {
             let mover = self.play_move(m);
             if mover.is_err() {
                 println!("Error: {:?} \n{}", moves, self);
                 panic!("");
             }
+			last_move = mover.unwrap();
         }
-        Ok(())
+        Ok(last_move)
     }
 
     pub fn to_u64(&self) -> (u64, u64) {
@@ -274,7 +302,7 @@ impl Board {
         let mut cases: [[Case; 8]; 8] = [[Case::Empty; 8]; 8];
         for i in 0..8 {
             for j in 0..8 {
-                let k = (1_u64 << (64 - 8 * i - j - 1)) as u64;
+                let k = 1_u64 << (64 - 8 * i - j - 1);
                 if (input.0 & k) != 0 {
                     cases[i][j] = if (input.1 & k) != 0 {
                         Case::Black
@@ -284,7 +312,7 @@ impl Board {
                 }
             }
         }
-        return Board::from_cases(cases);
+        Board::from_cases(cases)
     }
 }
 

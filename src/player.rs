@@ -14,9 +14,9 @@
 use std::cmp::Ordering;
 use std::io::stdout;
 
-use crate::board::{Board, Case};
+use crate::board::{Board, BoardState, Case, EndState};
 use crate::mcts;
-use crate::minimax;
+use crate::minimax::{self, Tree};
 use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
@@ -28,8 +28,12 @@ pub enum Strategy {
     Greedy,
     Manual,
     Minimax { depth: u8 },
-    MinimaxTree { depth: u8 },
-    //MCTS { depth: i8 },
+    MCTS { playout_budget: usize },
+}
+
+pub enum PlayStyle {
+    Automatic,
+    Progressive,
 }
 
 pub struct Player {
@@ -39,11 +43,7 @@ pub struct Player {
 
 impl Player {
     /// New players (Black,white)
-    pub fn new(strategy: Option<(Strategy, Strategy)>) -> Player {
-        let strategy = match strategy {
-            Some(s) => s,
-            None => (Strategy::Random, Strategy::Random),
-        };
+    pub fn new(strategy: (Strategy, Strategy)) -> Self {
 
         Player {
             board: Board::new(),
@@ -55,150 +55,77 @@ impl Player {
         let is_win = cfg!(windows);
         println!("Running on Windows: {}", is_win);
         println!("Welcome to Reversi (Othello)! - Rust Edition");
-        let mut rng = rand::thread_rng();
+
         let mut board = Board::new();
-        let mut stdout = stdout();
-        let mut quit = false;
+        let mut player1 =
+            PlayerAPI::new(self.strategy.0, PlayStyle::Progressive, Case::Black, &board);
+        let mut player2 =
+            PlayerAPI::new(self.strategy.1, PlayStyle::Progressive, Case::White, &board);
         println!();
-        while !board.available_moves(None).is_empty() {
-            let mut auto = true;
+        loop {
             println!("{}", board);
-            let strategy = match board.get_turn() {
-                Case::White => &self.strategy.0,
-                Case::Black => &self.strategy.1,
-                Case::Empty => {
-                    panic!("Empty case is not a valid turn");
-                }
+            let (current_player, other) = match board.get_turn() {
+                Case::Black => (&mut player1, &mut player2),
+                Case::White => (&mut player2, &mut player1),
+                Case::Empty => panic!("wtf bro"),
             };
-            match strategy {
-                /*Strategy::MCTS { depth } => {
-                    let mut mcts = mcts::MCTS::new(board.clone());
-                    mcts.expand_by_depth(*depth);
-                    let bmov = mcts.best_move(50, Case::Black);
-                    board.play_move(&bmov).unwrap();
-                }*/
-                Strategy::Random => {
-                    let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
-                    board.play_move(&bmove).unwrap();
+
+            let (move_, mut quit) = current_player.get_move(&board);
+            if quit {
+                println!("Quitting...");
+                return;
+            }
+
+            let state = board.play_move(&move_).unwrap();
+
+            match state {
+                BoardState::Ongoing => {
+                    current_player.update_board(&board);
+                    other.update_board(&board);
                 }
-                Strategy::Greedy => {
-                    board.play_move_with_highest_gain().unwrap();
-                }
-                Strategy::Minimax { depth } => {
-                    let outcomes = minimax::calculate_outcomes(&board, *depth);
-                    let best_move = minimax::minimax(&outcomes, &mut board);
-                    board.play_move(&best_move).unwrap();
-                }
-                Strategy::MinimaxTree { depth } => {
-                    let mut tree = minimax::Tree::from_board(&mut board, None, *depth);
-                    let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
-                    board.play_move(&best_tree.mov.unwrap()).unwrap();
-                }
-                Strategy::Manual => {
-                    auto = false;
-                    let moves = board.available_moves(None);
-                    if moves.is_empty() {
-                        break;
-                    }
+                BoardState::Ended(end_state) => {
+                    let (white, black) = board.score();
+                    println!("White: {}, Black: {}", white, black);
                     println!(
-                        "Available moves: {}",
-                        moves
-                            .iter()
-                            .map(print_coords)
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    );
-                    // Get user input with std::io
-                    let mut input = String::new();
-                    std::io::stdin().read_line(&mut input).unwrap();
-                    let input = input.trim();
-                    let input = input
-                        .split("")
-                        .filter(|s| !s.is_empty())
-                        .collect::<Vec<&str>>();
-                    // Input can be A1 or a1
-                    if input.is_empty() {
-                        continue;
-                    }
-                    if input.len() != 2 {
-                        if input[0] == "q" {
-                            quit = true;
-                            break;
+                        "Winner: {}",
+                        match end_state {
+                            EndState::Winner(Case::Black) => "Black",
+                            EndState::Winner(Case::White) => "White",
+                            EndState::Winner(Case::Empty) => "Draw",
                         }
-                        println!("Invalid move");
-                        continue;
-                    }
-                    let input = (
-                        input[0].to_uppercase().chars().next().unwrap() as usize - 65,
-                        input[1].parse::<usize>().unwrap() - 1,
                     );
-                    if !moves.contains(&input) {
-                        println!("Invalid move");
-                        continue;
-                    }
-                    board.play_move(&input).unwrap();
+                    break;
                 }
             }
-            // Wait for user to press enter
 
-            if auto {
-                loop {
-                    match read().unwrap() {
-                        Event::Key(KeyEvent {
-                            code: KeyCode::Enter,
-                            modifiers: KeyModifiers::NONE,
-                            kind: KeyEventKind::Press,
-                            state: KeyEventState::NONE,
-                        }) => break,
-                        Event::Key(KeyEvent {
-                            code: KeyCode::Char('q'),
-                            modifiers: KeyModifiers::NONE,
-                            kind: KeyEventKind::Press,
-                            state: KeyEventState::NONE,
-                        }) => {
-                            quit = true;
-                            break;
-                        }
-                        _ => {}
+            loop {
+                match read().unwrap() {
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Enter,
+                        modifiers: KeyModifiers::NONE,
+                        kind: KeyEventKind::Press,
+                        state: KeyEventState::NONE,
+                    }) => break,
+                    Event::Key(KeyEvent {
+                        code: KeyCode::Char('q'),
+                        modifiers: KeyModifiers::NONE,
+                        kind: KeyEventKind::Press,
+                        state: KeyEventState::NONE,
+                    }) => {
+                        quit = true;
+                        break;
                     }
+                    _ => {}
                 }
             }
             if quit {
-                break;
+                println!("Quitting...");
+                return;
             }
-            //stdout.queue(MoveUp(if is_win { 10 } else { 11 })).unwrap();
-            println!(
-                "Playing move: {}",
-                print_coords(board.history.moves.last().unwrap())
-            );
         }
-
-        if quit {
-            println!("Quitting...");
-            return;
-        }
-
-        println!("{}", board);
-        stdout.queue(MoveDown(10)).unwrap();
-        let (white, black) = board.score();
-        println!("White: {}, Black: {}", white, black);
-        println!(
-            "Winner: {}",
-            match white.cmp(&black) {
-                Ordering::Greater => {
-                    "White"
-                }
-                Ordering::Less => {
-                    "Black"
-                }
-                Ordering::Equal => {
-                    "Draw"
-                }
-            }
-        );
     }
 
-    pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
+    /*pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
         use rand::rngs::OsRng;
         use tokio::task::spawn;
         let mut games_result = (0, 0, 0); // White Black Draw
@@ -231,14 +158,6 @@ impl Player {
                         Strategy::Greedy => {
                             board.play_move_with_highest_gain().unwrap();
                         }
-                        Strategy::Minimax { depth } => {
-                            let outcomes = minimax::calculate_outcomes(&board, depth);
-                            if outcomes.is_empty() {
-                                break;
-                            }
-                            let best_move = minimax::minimax(&outcomes, &mut board);
-                            board.play_move(&best_move).unwrap();
-                        }
                         Strategy::MinimaxTree { depth } => {
                             let mut tree = minimax::Tree::from_board(&mut board, None, depth);
                             let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
@@ -268,6 +187,103 @@ impl Player {
             }
         }
         games_result
+    }*/
+}
+
+pub struct PlayerAPI {
+    mcts: mcts::MCTS,
+    minimax: Tree,
+    strategy: Strategy,
+    playstyle: PlayStyle,
+    rng: rand::rngs::ThreadRng,
+}
+
+impl PlayerAPI {
+    fn new(strategy: Strategy, playstyle: PlayStyle, player: Case, board: &Board) -> Self {
+        let (minimax, mcts) = match strategy {
+            Strategy::Greedy | Strategy::Manual | Strategy::Random => (
+                Tree::from_board(&mut board.clone(), None, 1),
+                mcts::MCTS::new(player, 0, board.clone()),
+            ),
+            Strategy::MCTS { playout_budget } => (
+                Tree::from_board(&mut board.clone(), None, 1),
+                mcts::MCTS::new(player, playout_budget, board.clone()),
+            ),
+            Strategy::Minimax { depth } => (
+                Tree::from_board(&mut board.clone(), None, depth),
+                mcts::MCTS::new(player, 0, board.clone()),
+            ),
+        };
+
+        Self {
+            mcts,
+            minimax,
+            strategy,
+            playstyle,
+            rng: rand::thread_rng(),
+        }
+    }
+
+    fn update_board(&mut self, board: &Board) {
+        if let Strategy::Minimax { depth } = self.strategy {
+            self.minimax = Tree::from_board(&mut board.clone(), None, depth);
+        };
+    }
+
+    fn get_move(&mut self, board: &Board) -> ((usize, usize), bool) {
+        match self.strategy {
+            Strategy::Random => (
+                *board.available_moves(None).choose(&mut self.rng).unwrap(),
+                false,
+            ),
+            Strategy::Greedy => (board.move_with_highest_gain().unwrap(), false),
+            Strategy::MCTS { .. } => (self.mcts.search(board), false),
+            Strategy::Minimax { .. } => (self.minimax.best_move(board.get_turn()), false),
+            Strategy::Manual => {
+                if matches!(self.playstyle, PlayStyle::Automatic) {
+                    panic!("Manual is not supported in automatic games !");
+                }
+                let moves = board.available_moves(None);
+                println!(
+                    "Available moves: {}",
+                    moves
+                        .iter()
+                        .map(print_coords)
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                );
+                loop {
+                    // Get user input with std::io
+                    let mut input = String::new();
+                    std::io::stdin().read_line(&mut input).unwrap();
+                    let input = input.trim();
+                    let input = input
+                        .split("")
+                        .filter(|s| !s.is_empty())
+                        .collect::<Vec<&str>>();
+                    // Input can be A1 or a1
+                    if input.is_empty() {
+                        continue;
+                    }
+                    if input.len() != 2 {
+                        if input[0] == "q" {
+                            break ((0, 0), true);
+                        }
+                        println!("Invalid move");
+                        continue;
+                    }
+                    let input = (
+                        input[0].to_uppercase().chars().next().unwrap() as usize - 65,
+                        input[1].parse::<usize>().unwrap() - 1,
+                    );
+                    if !moves.contains(&input) {
+                        println!("Invalid move");
+                        continue;
+                    }
+                    break (input, false);
+                }
+            }
+        }
     }
 }
 

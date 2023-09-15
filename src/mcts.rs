@@ -13,26 +13,149 @@
 #![allow(non_snake_case, unused_variables, dead_code)]
 
 use core::panic;
+use std::collections::HashMap;
 
-use crate::board::{Board, Case};
+use rand::{seq::SliceRandom, thread_rng};
 
-const EXPLORATION_PARAMETER: f32 = std::f32::consts::SQRT_2;
+use crate::board::{Board, BoardState, Case, EndState};
+
+const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
     played: u32,
     wins: u32,
-    action: (usize, usize),
     turn: Case,
     state: Board,
-    children: Vec<Node>,
-    possible_moves: Vec<(usize, usize)>,
+    children: HashMap<(usize, usize), Node>,
     is_terminal: bool,
+    is_fully_expanded: bool,
+    exploration_constant: f64,
 }
 
 impl Node {
-    fn new_child(&mut self, child: Node) {
-        self.children.push(child);
+    fn from_expansion(parent: &Node, move_: (usize, usize)) -> (Node, EndState) {
+        let mut board = parent.state.clone();
+        let player = parent.turn.opponent();
+        let (is_end_state, endstate) = match board.play_move(&move_) {
+            Ok(BoardState::Ongoing) => (
+                false,
+                Node::simulate_random_playout(&mut board.clone(), player.opponent()),
+            ),
+            Ok(BoardState::Ended(endstate)) => (true, endstate),
+            Err(msg) => panic!(
+                "error in Node.from_expansion when calling board.play_move(): {}",
+                msg
+            ),
+        };
+        let mut node = Node {
+            state: board,
+            turn: player,
+            is_terminal: is_end_state,
+            is_fully_expanded: is_end_state,
+            played: 0,
+            wins: 0,
+            children: HashMap::new(),
+            exploration_constant: parent.exploration_constant,
+        };
+
+        node.update_from_endstate(endstate);
+
+        (node, endstate)
+    }
+
+    fn simulate_random_playout(board: &mut Board, player: Case) -> EndState {
+        let mut curr_player = player.opponent();
+        loop {
+            let mut rng = thread_rng();
+            let game_state =
+                board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
+            curr_player = curr_player.opponent();
+            match game_state {
+                Ok(state) => match state {
+                    BoardState::Ongoing => (),
+                    BoardState::Ended(endstate) => return endstate,
+                },
+                Err(msg) => panic!("Err in Node.simulate_random_playout(): {}", msg),
+            }
+        }
+    }
+
+    fn update_from_endstate(&mut self, endstate: EndState) {
+        self.played += 1;
+        if let EndState::Winner(winner) = endstate {
+            if winner == self.turn {
+                self.wins += 1
+            }
+        }
+    }
+
+    fn update_fully_expanded(&mut self) {
+        if self.children.len() == self.state.available_moves(None).len()
+            && self
+                .children
+                .values()
+                .filter(|&c| !c.is_fully_expanded)
+                .count()
+                == 0
+        {
+            self.is_fully_expanded = true;
+        }
+    }
+
+    fn get_exploration_score(&self, exploration_constant: f64, move_: &(usize, usize)) -> f64 {
+        // Ratio of simulations from the given node that we didn't lose
+        let get_node_not_loss_ratio = |n: &Node| n.wins as f64 / n.played as f64;
+        // UCT formula
+        let calculate_uct = |score: f64, c_visits: u32, p_visits: u32| {
+            score + exploration_constant * (f64::ln(p_visits as f64) / c_visits as f64)
+        };
+        match self.children.get(move_) {
+            Some(child) => {
+                if child.is_fully_expanded {
+                    0.
+                } else {
+                    calculate_uct(get_node_not_loss_ratio(child), child.played, self.played)
+                }
+            }
+            None => exploration_constant,
+        }
+    }
+
+    fn expand(&mut self) -> EndState {
+        if self.is_fully_expanded {
+            return EndState::Winner(Case::Empty);
+        }
+
+        let mut moves = self.state.available_moves(None);
+        for (index, move_) in moves.iter().enumerate() {
+            if self.children.len() <= index {
+                let (child_node, endstate) = Node::from_expansion(self, *move_);
+                self.children.insert(*move_, child_node);
+                self.update_from_endstate(endstate);
+                self.update_fully_expanded();
+                return endstate;
+            }
+        }
+
+        moves.sort_by(|m1, m2| {
+            self.get_exploration_score(self.exploration_constant, m1)
+                .partial_cmp(&self.get_exploration_score(self.exploration_constant, m2))
+                .unwrap()
+        });
+
+        while !moves.is_empty() {
+            let best_move = moves.pop().unwrap();
+            let child = self.children.get_mut(&best_move).unwrap();
+            if !child.is_fully_expanded {
+                let endstate = child.expand();
+                self.update_from_endstate(endstate);
+                self.update_fully_expanded();
+                return endstate;
+            }
+        }
+
+        panic!("Expand is broken !")
     }
 }
 
@@ -41,7 +164,6 @@ impl std::fmt::Display for Node {
         let mut res = String::new();
         res.push_str(&format!("played: {}\n", self.played));
         res.push_str(&format!("wins: {}\n", self.wins));
-        res.push_str(&format!("action: {:?}\n", self.action));
         write!(f, "{}", res)
     }
 }
@@ -50,228 +172,119 @@ impl std::fmt::Display for MCTS {
     // iterate over the nodes recursively and print them
     // use an auxiliary function
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fn add_nodes(nodes: &Vec<Node>) -> String {
+        fn add_nodes(node: &Node, limit: usize) -> String {
+            if limit == 0 {
+                return "".to_string();
+            }
             let mut s = String::new();
-            for node in nodes.iter() {
+            for node in node.children.values() {
                 s.push_str(&format!("{}\n", node));
-                if node.children.len() != 0 {
-                    s.push_str(&format!("   {}", add_nodes(&node.children))[..]);
+                if !node.children.is_empty() {
+                    s.push_str(&format!("   {}", add_nodes(node, limit - 1))[..]);
                 }
             }
             s
         }
         let mut res = String::new();
 
-        for node in self.root.iter() {
-            res.push_str(&format!("{}\n", node));
-        }
+        res.push_str(&format!("{}\n", add_nodes(&self.root, 5)));
         write!(f, "{}", res)
     }
 }
 
-struct MCTS {
-    root: Vec<Node>,
+#[derive(Debug, Clone)]
+pub struct MCTS {
+    root: Node,
     player: Case,
+    playout_budget: usize,
+    exploration_constant: f64,
 }
 
 impl MCTS {
-    pub fn new(board: Board) -> MCTS {
-        let mut init_nodes = Vec::new();
-        let mut board = board;
-        let player = board.get_turn();
-        let moves = board.available_moves(None);
-        for mov in moves {
-            board.play_move(&mov).unwrap();
-            init_nodes.push(Node {
-                played: 0,
-                wins: 0,
-                action: mov,
-                turn: board.get_turn().opponent(),
-                state: board.clone(),
-                children: Vec::with_capacity(8),
-                possible_moves: board.available_moves(None),
-                is_terminal: false,
-            });
-            board.reset(1);
-        }
+    pub fn new(player: Case, playout_budget: usize, board: Board) -> MCTS {
+        let root = Node {
+            state: board,
+            turn: player.opponent(),
+            is_fully_expanded: false,
+            is_terminal: false,
+            played: 0,
+            wins: 0,
+            children: HashMap::new(),
+            exploration_constant: EXPLORATION_PARAMETER,
+        };
+
         MCTS {
-            root: init_nodes,
             player,
-        }
-    }
-
-    fn selection(&self) -> Vec<usize> {
-        let mut res = Vec::new();
-        fn select_rec(path: &mut Vec<usize>, root: &Vec<Node>, parent: Option<&Node>) {
-            let mut nodes = root;
-
-            let parent_played = if let Some(node) = parent {
-                node.played
-            } else {
-                nodes.iter().fold(0, |acc, n| acc + n.played)
-            } as f32;
-
-            let idx = choose_UCT(nodes, parent_played);
-            path.push(idx);
-            let node = &nodes[idx];
-            nodes = &node.children;
-
-            if !nodes.is_empty() {
-                select_rec(path, nodes, Some(node));
-            }
-        }
-        select_rec(&mut res, &self.root, None);
-        res
-    }
-
-    fn simulation(node: &mut Node, player: Case) -> Case {
-        let mut board = node.state.clone();
-        let mut moves = board.available_moves(None);
-        let mut win = 0;
-        while moves.len() != 0 {
-            let idx = rand::random::<usize>() % moves.len();
-            board.play_move(&moves[idx]).unwrap();
-            moves = board.available_moves(None);
-        }
-        let winner = {
-            let score = board.score();
-            if score.0 > score.1 {
-                Case::White
-            } else if score.0 < score.1 {
-                Case::Black
-            } else {
-                Case::Empty
-            }
-        };
-        winner
-    }
-
-    fn backpropagate(root: &mut Vec<Node>, path: Vec<usize>, winner: Case) {
-        let mut nodes = root;
-        for i in 0..path.len() {
-            if nodes[path[i]].turn == winner {
-                nodes[path[i]].wins += 1;
-            }
-            nodes[path[i]].played += 1;
-            nodes = &mut nodes[path[i]].children;
-        }
-    }
-
-    fn extend<'a>(path: &'a Vec<usize>, root: &'a mut Vec<Node>) -> &'a mut Node {
-        //println!("{:?}", root);
-        let node = root.index_path_mut(path);
-        //println!("{:?}", node);
-        let board = node.state.clone();
-        for i in 0..node.possible_moves.len() {
-            let mov = node.possible_moves[i];
-            let mut new_state = board.clone();
-            new_state.play_move(&mov).unwrap();
-            let pm = new_state.available_moves(None);
-            let it = pm.len() == 0;
-            node.new_child(Node {
-                played: 0,
-                wins: 0,
-                action: mov,
-                turn: node.turn.opponent(),
-                state: new_state,
-                children: Vec::new(),
-                possible_moves: pm,
-                is_terminal: it,
-            });
-        }
-        node
-    }
-
-    fn rebase(self, path: usize) -> Self {
-        let root = self.root;
-        let rnode = root[path].clone();
-
-        let mut root = rnode.children;
-        if root.is_empty() {
-            let mut board = rnode.state;
-            let moves = rnode.possible_moves;
-            for mov in moves {
-                board.play_move(&mov).unwrap();
-                root.push(Node {
-                    played: 0,
-                    wins: 0,
-                    action: mov,
-                    turn: board.get_turn(),
-                    state: board.clone(),
-                    children: Vec::with_capacity(8),
-                    possible_moves: board.available_moves(None),
-                    is_terminal: false,
-                });
-                board.reset(1);
-            }
-        }
-        MCTS {
+            playout_budget,
             root,
-            player: self.player,
+            exploration_constant: EXPLORATION_PARAMETER,
         }
     }
 
-    fn find_move(&self, mov: (usize, usize)) -> usize {
-        for (idx, ch) in self.root.iter().enumerate() {
-            if ch.action == mov {
-                return idx;
+    pub fn search(&mut self, board: &Board) -> (usize, usize) {
+        let opp_move = self.get_opponents_last_move(board);
+        if let Some(opp_move_fr) = opp_move {
+            self.update_with_opponents_move(opp_move_fr, board)
+        }
+
+        let num_moves = board.available_moves(None).len();
+        while self.root.children.len() < num_moves {
+            self.root.expand();
+        }
+
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(8)
+            .build()
+            .unwrap();
+
+		pool.scope(|scoped| {
+			let playout_budget = self.playout_budget;
+            for child in self.root.children.values_mut() {
+                scoped.spawn(move |_| {
+                    for _ in 0..playout_budget / num_moves {
+                        child.expand();
+                    }
+                });
+            }
+		});
+
+		self.get_best_move_and_promote_child()
+    }
+
+    fn get_opponents_last_move(&self, board: &Board) -> Option<(usize, usize)> {
+        board.history.moves.last().copied()
+    }
+
+    fn update_with_opponents_move(&mut self, opp_move: (usize, usize), board: &Board) {
+        match self.root.children.remove(&opp_move) {
+            Some(child_node) => self.root = child_node,
+            None => self.root.state = board.clone(),
+        }
+    }
+
+    fn get_best_move_and_promote_child(&mut self) -> (usize, usize) {
+        let mut best_winrate = 0.0f64;
+        let mut best_moves: Vec<(usize, usize)> = vec![];
+
+        for (&move_, child) in self.root.children.iter() {
+            let node_winrate = child.wins as f64 / child.played as f64;
+            if node_winrate > best_winrate {
+                best_winrate = node_winrate;
+                best_moves = vec![move_];
+            } else if node_winrate == best_winrate {
+                best_moves.push(move_);
             }
         }
-        panic!()
+
+        let mut rng = thread_rng();
+        let &best_move = best_moves.choose(&mut rng).unwrap();
+        let new_root = self.root.children.remove(&best_move).unwrap();
+        self.root = new_root;
+
+        best_move
     }
 }
-
-trait IndexPath {
-    fn index_path_mut(&mut self, path: &Vec<usize>) -> &mut Node;
-}
-
-impl IndexPath for Vec<Node> {
-    fn index_path_mut(&mut self, path: &Vec<usize>) -> &mut Node {
-        let mut nodes = self;
-        for i in 0..path.len() - 1 {
-            nodes = &mut nodes[path[i]].children;
-        }
-        &mut nodes[path[path.len() - 1]]
-    }
-}
-fn choose_UCT(nodes: &Vec<Node>, parent_played: f32) -> usize {
-    let mut _max = f32::MIN;
-    let mut max_index: usize = 0;
-
-    for (i, node) in nodes.iter().enumerate() {
-        let val = if node.played > 0 {
-            node.wins as f32 / node.played as f32
-                + EXPLORATION_PARAMETER
-                    * f32::sqrt(f32::ln(parent_played as f32) / node.played as f32)
-        } else {
-            1.0
-        };
-        if val > _max {
-            _max = val;
-            max_index = i;
-        }
-    }
-    max_index
-}
-
-fn best_move(nodes: &Vec<Node>) -> usize {
-    let mut _max = f32::MIN;
-    let mut max_index: usize = 0;
-
-    for (i, node) in nodes.iter().enumerate() {
-        let val = if node.played > 0 {
-            node.wins as f32 / node.played as f32
-        } else {
-            0.0
-        };
-        if val > _max {
-            _max = val;
-            max_index = i;
-        }
-    }
-    max_index
-}
-
+/*
 pub(crate) fn test_mcts_mthreads() {
     let mut w = 0;
     use crate::minimax;
@@ -396,4 +409,4 @@ pub(crate) fn test_mcts() {
         }
     }
     println!("{w}")
-}
+}*/
