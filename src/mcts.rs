@@ -83,11 +83,11 @@ impl Node {
 
     fn update_from_endstate(&mut self, endstate: EndState) {
         self.played += 1;
-        if let EndState::Winner(winner) = endstate {
-            if winner == self.turn {
-                self.wins += 1
-            }
+        let EndState::Winner(winner) = endstate;
+        if winner == self.turn {
+            self.wins += 1
         }
+        
     }
 
     fn update_fully_expanded(&mut self) {
