@@ -128,8 +128,8 @@ impl Node {
         }
 
         let mut moves = self.state.available_moves(None);
-        for (index, move_) in moves.iter().enumerate() {
-            if self.children.len() <= index {
+        for move_ in moves.iter() {
+            if self.children.get(move_).is_none() {
                 let (child_node, endstate) = Node::from_expansion(self, *move_);
                 self.children.insert(*move_, child_node);
                 self.update_from_endstate(endstate);
