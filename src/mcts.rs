@@ -222,9 +222,8 @@ impl MCTS {
     }
 
     pub fn search(&mut self, board: &Board) -> (usize, usize) {
-        let opp_move = self.get_opponents_last_move(board);
-        if let Some(opp_move_fr) = opp_move {
-            self.update_with_opponents_move(opp_move_fr, board)
+        if let Some(opp_move) = self.get_opponents_last_move(board) {
+            self.update_with_opponents_move(opp_move, board);
         }
 
         let num_moves = board.available_moves(None).len();
