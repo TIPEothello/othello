@@ -197,16 +197,16 @@ impl PlayerAPI {
     fn new(strategy: Strategy, playstyle: PlayStyle, player: Case, board: &Board) -> Self {
         let (minimax, mcts) = match strategy {
             Strategy::Greedy | Strategy::Manual | Strategy::Random => (
-                Tree::from_board(&mut board.clone(), None, 1),
-                mcts::MCTS::new(player, 0, board.clone()),
+                Tree::empty(),
+                mcts::MCTS::empty(),
             ),
             Strategy::MCTS { playout_budget } => (
-                Tree::from_board(&mut board.clone(), None, 1),
+                Tree::empty(),
                 mcts::MCTS::new(player, playout_budget, board.clone()),
             ),
             Strategy::Minimax { depth } => (
                 Tree::from_board(&mut board.clone(), None, depth),
-                mcts::MCTS::new(player, 0, board.clone()),
+                mcts::MCTS::empty(),
             ),
         };
 

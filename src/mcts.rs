@@ -68,8 +68,7 @@ impl Node {
         let mut curr_player = player.opponent();
         loop {
             let mut rng = thread_rng();
-            let game_state =
-                board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
+            let game_state = board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
@@ -87,7 +86,6 @@ impl Node {
         if winner == self.turn {
             self.wins += 1
         }
-        
     }
 
     fn update_fully_expanded(&mut self) {
@@ -221,6 +219,24 @@ impl MCTS {
         }
     }
 
+    pub fn empty() -> Self {
+        MCTS {
+            player: Case::Empty,
+            playout_budget: 0,
+            exploration_constant: 0.0,
+            root: Node {
+                played: 0,
+                wins: 0,
+                turn: Case::Empty,
+                state: Board::new(),
+                children: HashMap::new(),
+                is_terminal: false,
+                is_fully_expanded: false,
+                exploration_constant: 0.0,
+            },
+        }
+    }
+
     pub fn search(&mut self, board: &Board) -> (usize, usize) {
         if let Some(opp_move) = self.get_opponents_last_move(board) {
             self.update_with_opponents_move(opp_move, board);
@@ -236,8 +252,8 @@ impl MCTS {
             .build()
             .unwrap();
 
-		pool.scope(|scoped| {
-			let playout_budget = self.playout_budget;
+        pool.scope(|scoped| {
+            let playout_budget = self.playout_budget;
             for child in self.root.children.values_mut() {
                 scoped.spawn(move |_| {
                     for _ in 0..playout_budget / num_moves {
@@ -245,9 +261,9 @@ impl MCTS {
                     }
                 });
             }
-		});
+        });
 
-		self.get_best_move_and_promote_child()
+        self.get_best_move_and_promote_child()
     }
 
     fn get_opponents_last_move(&self, board: &Board) -> Option<(usize, usize)> {
