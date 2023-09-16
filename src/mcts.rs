@@ -1,15 +1,3 @@
-/*
- File: mcts.rs
- Created Date: 05 Sep 2023
- Author: realbacon
- -----
- Last Modified: 5/09/2023 03:15:2
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
-
 #![allow(non_snake_case, unused_variables, dead_code)]
 
 use core::panic;

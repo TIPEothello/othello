@@ -1,14 +1,3 @@
-/*
- File: player.rs
- Created Date: 21 Mar 2023
- Author: realbacon
- -----
- Last Modified: 27/06/2023 01:03:56
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
 #![allow(dead_code, unused_imports)]
 use std::cmp::Ordering;
 use std::io::stdout;
@@ -346,3 +335,5 @@ pub fn print_coords(c: &(usize, usize)) -> String {
     let y = c.1 as u8 + 49;
     format!("{}{}", x as char, y as char)
 }
+
+fn display_score(score: (u32, u32, u32)) {}

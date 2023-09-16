@@ -1,14 +1,3 @@
-/*
- File: strategy.rs
- Created Date: 21 Mar 2023
- Author: realbacon
- -----
- Last Modified: 27/06/2023 01:03:57
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
 #![allow(dead_code, unused_variables)]
 
 use crate::board::{Board, Case};
@@ -27,17 +16,17 @@ pub struct Tree {
 }
 
 impl Tree {
-	pub fn empty() -> Self {
-		Self {
-			depth: 0,
-			subtree: None,
-			moves: 0,
-			mov: None,
-			score: (0,0),
-			cases: Board::new().cases,
-			value: None
-		}
-	}
+    pub fn empty() -> Self {
+        Self {
+            depth: 0,
+            subtree: None,
+            moves: 0,
+            mov: None,
+            score: (0, 0),
+            cases: Board::new().cases,
+            value: None,
+        }
+    }
     pub fn from_board(board: &mut Board, mov: Option<(usize, usize)>, depth: u8) -> Self {
         let moves = board.available_moves(None);
         if depth == 0 || moves.is_empty() {
@@ -69,9 +58,9 @@ impl Tree {
         }
     }
 
-	pub fn best_move(&mut self, color: Case) -> (usize, usize) {
-		minimax(self, color).mov.unwrap()
-	}
+    pub fn best_move(&mut self, color: Case) -> (usize, usize) {
+        minimax(self, color).mov.unwrap()
+    }
 }
 
 impl Display for Tree {
@@ -96,7 +85,6 @@ impl Display for Tree {
         write!(f, "{}", res)
     }
 }
-
 
 pub const PLACEMENT_SCORE: [[isize; 8]; 8] = [
     [256, -8, 16, 16, 16, 16, -8, 256],
@@ -189,7 +177,7 @@ pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32
     if tree.moves == 0 {
         10000 * balance.signum() + balance
     } else {
-		let state = filled / 16; // Découpe la partie en plusieurs phases
+        let state = filled / 16; // Découpe la partie en plusieurs phases
         let mut result = balance << state; // On attribue une importance grandissante au score en fonction de l'avancement de la partie
         let matrix = matrix_eval(&tree.cases);
         result += if color == Case::Black {

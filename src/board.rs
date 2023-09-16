@@ -1,14 +1,3 @@
-/*
- File: board.rs
- Created Date: 21 Mar 2023
- Author: realbacon
- -----
- Last Modified: 4/07/2023 09:23:16
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
 #![allow(dead_code)]
 
 use crate::rules::{check_direction, is_legal_move, is_legal_move_with_gain};
@@ -23,13 +12,13 @@ pub enum Case {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EndState {
-	Winner(Case)
+    Winner(Case),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BoardState {
-	Ongoing,
-	Ended(EndState)
+    Ongoing,
+    Ended(EndState),
 }
 
 impl Case {
@@ -170,18 +159,15 @@ impl Board {
         self.history.moves.push(*bmove);
         self.history.history.push(self.cases);
 
-
-		Ok(if self.available_moves(None).is_empty() {
-			match self.score() {
-				(x, y) if x > y => BoardState::Ended(EndState::Winner(Case::White)),
-				(x, y) if x < y => BoardState::Ended(EndState::Winner(Case::Black)),
-				_ => BoardState::Ended(EndState::Winner(Case::Empty))
-			}
-		} else {
-			BoardState::Ongoing
-		})
-
-        
+        Ok(if self.available_moves(None).is_empty() {
+            match self.score() {
+                (x, y) if x > y => BoardState::Ended(EndState::Winner(Case::White)),
+                (x, y) if x < y => BoardState::Ended(EndState::Winner(Case::Black)),
+                _ => BoardState::Ended(EndState::Winner(Case::Empty)),
+            }
+        } else {
+            BoardState::Ongoing
+        })
     }
 
     pub fn move_with_highest_gain(&self) -> Result<(usize, usize), String> {
@@ -266,17 +252,17 @@ impl Board {
     }
 
     pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<BoardState, &str> {
-		if moves.is_empty() {
-			panic!("bro...")
-		}
-		let mut last_move = BoardState::Ongoing;
+        if moves.is_empty() {
+            panic!("bro...")
+        }
+        let mut last_move = BoardState::Ongoing;
         for m in moves.iter() {
             let mover = self.play_move(m);
             if mover.is_err() {
                 println!("Error: {:?} \n{}", moves, self);
                 panic!("");
             }
-			last_move = mover.unwrap();
+            last_move = mover.unwrap();
         }
         Ok(last_move)
     }

@@ -1,15 +1,3 @@
-/*
- File: rules.rs
- Created Date: 04 Apr 2023
- Author: realbacon
- -----
- Last Modified: 20/06/2023 01:50:14
- Modified By: realbacon
- -----
- License  : MIT
- -----
-*/
-
 use crate::board::{Case, DIRECTIONS};
 
 /// Check if a move is legal
