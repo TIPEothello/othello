@@ -219,6 +219,24 @@ impl MCTS {
         }
     }
 
+    pub fn empty() -> Self {
+        MCTS {
+            player: Case::Empty,
+            playout_budget: 0,
+            exploration_constant: 0.0,
+            root: Node {
+                played: 0,
+                wins: 0,
+                turn: Case::Empty,
+                state: Board::new(),
+                children: HashMap::new(),
+                is_terminal: false,
+                is_fully_expanded: false,
+                exploration_constant: 0.0,
+            },
+        }
+    }
+
     pub fn search(&mut self, board: &Board) -> (usize, usize) {
         if let Some(opp_move) = self.get_opponents_last_move(board) {
             self.update_with_opponents_move(opp_move, board);
