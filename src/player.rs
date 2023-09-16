@@ -256,9 +256,8 @@ impl MctsPlayerAPI {
 
 impl PlayerApiTrait for MctsPlayerAPI {
     #[inline]
-    fn update_board(&mut self, _board: &Board) {
-        ()
-    }
+    fn update_board(&mut self, _board: &Board) {}
+
     #[inline]
     fn get_move(&mut self, board: &Board) -> (usize, usize) {
         self.0.search(board)
@@ -269,9 +268,7 @@ struct ManualPlayerAPI;
 
 impl PlayerApiTrait for ManualPlayerAPI {
     #[inline]
-    fn update_board(&mut self, _board: &Board) {
-        ()
-    }
+    fn update_board(&mut self, _board: &Board) {}
 
     fn get_move(&mut self, board: &Board) -> (usize, usize) {
         let moves = board.available_moves(None);
@@ -340,9 +337,8 @@ struct RandomPlayerAPI;
 
 impl PlayerApiTrait for RandomPlayerAPI {
     #[inline]
-    fn update_board(&mut self, _board: &Board) {
-        ()
-    }
+    fn update_board(&mut self, _board: &Board) {}
+
     #[inline]
     fn get_move(&mut self, board: &Board) -> (usize, usize) {
         *board
@@ -356,9 +352,8 @@ struct GreedyPlayerAPI;
 
 impl PlayerApiTrait for GreedyPlayerAPI {
     #[inline]
-    fn update_board(&mut self, _board: &Board) {
-        ()
-    }
+    fn update_board(&mut self, _board: &Board) {}
+
     #[inline]
     fn get_move(&mut self, board: &Board) -> (usize, usize) {
         board.move_with_highest_gain().unwrap()
