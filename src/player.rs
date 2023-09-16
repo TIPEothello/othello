@@ -44,7 +44,6 @@ pub struct Player {
 impl Player {
     /// New players (Black,white)
     pub fn new(strategy: (Strategy, Strategy)) -> Self {
-
         Player {
             board: Board::new(),
             strategy,
@@ -125,69 +124,57 @@ impl Player {
         }
     }
 
-    /*pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
-        use rand::rngs::OsRng;
+    pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
         use tokio::task::spawn;
-        let mut games_result = (0, 0, 0); // White Black Draw
+        let mut games_result = (0, 0, 0); // Black White Draw
 
-        let mut game_handler = Vec::new();
-        let strat = self.strategy;
-        let mut rng = OsRng::default();
         for _ in 0..n {
-            let game_thread = spawn(async move {
-                let mut board = Board::new();
-                while !board.available_moves(None).is_empty() {
-                    let strategy = match board.get_turn() {
-                        Case::White => strat.0,
-                        Case::Black => strat.1,
-                        Case::Empty => {
-                            panic!("Empty case is not a valid turn");
-                        }
-                    };
-                    match strategy {
-                        /*Strategy::MCTS { depth } => {
-                            let mut mcts = mcts::MCTS::new(board.clone());
-                            mcts.expand_by_depth(depth);
-                            let bmov = mcts.best_move(100, Case::Black);
-                            board.play_move(&bmov).unwrap();
-                        }*/
-                        Strategy::Random => {
-                            let bmove = *board.available_moves(None).choose(&mut rng).unwrap();
-                            board.play_move(&bmove).unwrap();
-                        }
-                        Strategy::Greedy => {
-                            board.play_move_with_highest_gain().unwrap();
-                        }
-                        Strategy::MinimaxTree { depth } => {
-                            let mut tree = minimax::Tree::from_board(&mut board, None, depth);
-                            let best_tree = minimax::minimax_tree(&mut tree, board.get_turn());
-                            board.play_move(&best_tree.mov.unwrap()).unwrap();
-                        }
-                        Strategy::Manual => {
-                            panic!("Manual strategy is not supported in play_games");
-                        }
+            let mut board = Board::new();
+            let mut player1 = PlayerAPI::new(
+                self.strategy.0,
+                PlayStyle::Automatic,
+                Case::Black,
+                &board.clone(),
+            );
+            let mut player2 = PlayerAPI::new(
+                self.strategy.1,
+                PlayStyle::Automatic,
+                Case::White,
+                &board.clone(),
+            );
+            loop {
+                let (current_player, other) = match board.get_turn() {
+                    Case::Black => (&mut player1, &mut player2),
+                    Case::White => (&mut player2, &mut player1),
+                    Case::Empty => panic!("wtf bro"),
+                };
+				
+
+                let move_ = current_player.get_move(&board).0;
+
+				println!("{:?}", move_);
+
+                let state = board.play_move(&move_).unwrap();
+
+                match state {
+                    BoardState::Ongoing => {
+                        current_player.update_board(&board);
+                        other.update_board(&board);
                     }
-                }
-                board.score()
-            });
-            game_handler.push(game_thread);
-        }
-        for game in game_handler {
-            let (white, black) = game.await.unwrap();
-            match white.cmp(&black) {
-                Ordering::Greater => {
-                    games_result.0 += 1;
-                }
-                Ordering::Less => {
-                    games_result.1 += 1;
-                }
-                Ordering::Equal => {
-                    games_result.2 += 1;
+                    BoardState::Ended(end_state) => {
+                        
+                    	match end_state {
+                            EndState::Winner(Case::Black) => games_result.0 += 1,
+                            EndState::Winner(Case::White) => games_result.1 += 1,
+                            EndState::Winner(Case::Empty) => games_result.2 += 1,
+                        }
+                        break;
+                    }
                 }
             }
         }
         games_result
-    }*/
+    }
 }
 
 pub struct PlayerAPI {
