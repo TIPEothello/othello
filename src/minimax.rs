@@ -170,9 +170,9 @@ pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32
     let score = tree.score;
     let filled = score.0 + score.1;
     let balance = if color == Case::Black {
-        score.1 as i32 - score.0 as i32
-    } else {
         score.0 as i32 - score.1 as i32
+    } else {
+        score.1 as i32 - score.0 as i32
     };
     if tree.moves == 0 {
         10000 * balance.signum() + balance
@@ -191,7 +191,7 @@ pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32
 
 fn material_count(original_score: (usize, usize), tree: &Tree, color: Case) -> isize {
     let mut res = (tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as isize;
-    if color == Case::Black {
+    if color == Case::White {
         res = -res;
     }
     res

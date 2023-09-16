@@ -159,15 +159,18 @@ impl Board {
         self.history.moves.push(*bmove);
         self.history.history.push(self.cases);
 
-        Ok(if self.available_moves(None).is_empty() {
-            match self.score() {
-                (x, y) if x > y => BoardState::Ended(EndState::Winner(Case::White)),
-                (x, y) if x < y => BoardState::Ended(EndState::Winner(Case::Black)),
-                _ => BoardState::Ended(EndState::Winner(Case::Empty)),
-            }
-        } else {
-            BoardState::Ongoing
-        })
+
+		Ok(if self.available_moves(None).is_empty() {
+			match self.score() {
+				(x, y) if x > y => BoardState::Ended(EndState::Winner(Case::Black)),
+				(x, y) if x < y => BoardState::Ended(EndState::Winner(Case::White)),
+				_ => BoardState::Ended(EndState::Winner(Case::Empty))
+			}
+		} else {
+			BoardState::Ongoing
+		})
+
+        
     }
 
     pub fn move_with_highest_gain(&self) -> Result<(usize, usize), String> {
@@ -217,7 +220,7 @@ impl Board {
         moves
     }
 
-    /// Returns the score of the board (white,black)
+    /// Returns the score of the board (black, white)
     pub fn score(&self) -> (usize, usize) {
         let mut white = 0;
         let mut black = 0;
@@ -230,7 +233,7 @@ impl Board {
                 }
             }
         }
-        (white, black)
+        (black, white)
     }
 
     pub fn reset(&mut self, num: usize) {

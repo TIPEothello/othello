@@ -70,8 +70,8 @@ impl Player {
                     other.update_board(&board);
                 }
                 BoardState::Ended(end_state) => {
-                    let (white, black) = board.score();
-                    println!("White: {}, Black: {}", white, black);
+                    let (black, white) = board.score();
+                    println!("Black: {}, White: {}", black, white);
                     println!(
                         "Winner: {}",
                         match end_state {
