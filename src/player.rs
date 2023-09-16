@@ -143,69 +143,49 @@ impl Player {
     }
 
     pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
-        use tokio::task::spawn;
-        let mut games_result = (0, 0, 0); // Black White Draw
         let vec: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
-        let games_result_par = (0..n)
-            .into_par_iter()
-            .map(|i| {
-                let mut board = Board::new();
-                let mut player1 = new_player_api(
-                    self.strategy.0,
-                    PlayStyle::Automatic,
-                    Case::Black,
-                    &board.clone(),
-                );
-                let mut player2 = new_player_api(
-                    self.strategy.1,
-                    PlayStyle::Automatic,
-                    Case::White,
-                    &board.clone(),
-                );
-                loop {
-                    let (current_player, other) = match board.get_turn() {
-                        Case::Black => (&mut player1, &mut player2),
-                        Case::White => (&mut player2, &mut player1),
-                        Case::Empty => panic!(""),
-                    };
+        (0..n).into_par_iter().for_each(|i| {
+            let mut board = Board::new();
+            let mut player1 = new_player_api(
+                self.strategy.0,
+                PlayStyle::Automatic,
+                Case::Black,
+                &board.clone(),
+            );
+            let mut player2 = new_player_api(
+                self.strategy.1,
+                PlayStyle::Automatic,
+                Case::White,
+                &board.clone(),
+            );
+            loop {
+                let (current_player, other) = match board.get_turn() {
+                    Case::Black => (&mut player1, &mut player2),
+                    Case::White => (&mut player2, &mut player1),
+                    Case::Empty => panic!(""),
+                };
 
-                    let move_ = current_player.get_move(&board);
+                let move_ = current_player.get_move(&board);
 
-                    //println!("{:?}", move_);
+                //println!("{:?}", move_);
 
-                    let state = board.play_move(&move_).unwrap();
+                let state = board.play_move(&move_).unwrap();
 
-                    if state == BoardState::Ongoing {
-                        current_player.update_board(&board);
-                        other.update_board(&board);
-                    } else if let BoardState::Ended(end_state) = state {
-                        println!("finished game {i}");
-                        let mut locked = vec.lock().unwrap();
-                        match end_state {
-                            EndState::Winner(Case::Black) => locked.0 += 1,
-                            EndState::Winner(Case::White) => locked.1 += 1,
-                            EndState::Winner(Case::Empty) => locked.2 += 1,
-                        }
-                        return end_state;
+                if state == BoardState::Ongoing {
+                    current_player.update_board(&board);
+                    other.update_board(&board);
+                } else if let BoardState::Ended(end_state) = state {
+                    println!("finished game {i}");
+                    let mut locked = vec.lock().unwrap();
+                    match end_state {
+                        EndState::Winner(Case::Black) => locked.0 += 1,
+                        EndState::Winner(Case::White) => locked.1 += 1,
+                        EndState::Winner(Case::Empty) => locked.2 += 1,
                     }
                 }
-            })
-            .collect::<Vec<_>>();
-
-        games_result.0 = games_result_par
-            .iter()
-            .filter(|end_state| matches!(end_state, EndState::Winner(Case::Black)))
-            .count() as u32;
-        games_result.1 = games_result_par
-            .iter()
-            .filter(|end_state| matches!(end_state, EndState::Winner(Case::White)))
-            .count() as u32;
-
-        games_result.2 = games_result_par
-            .iter()
-            .filter(|end_state| matches!(end_state, EndState::Winner(Case::Empty)))
-            .count() as u32;
-        println!("{:?}", vec);
+            }
+        });
+        let games_result = *vec.lock().unwrap();
         games_result
     }
 }
