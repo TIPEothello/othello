@@ -116,7 +116,7 @@ impl Node {
                     calculate_uct(get_node_not_loss_ratio(child), child.played, self.played)
                 }
             }
-            None => exploration_constant,
+            None => unreachable!(),
         }
     }
 
