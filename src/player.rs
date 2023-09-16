@@ -335,5 +335,3 @@ pub fn print_coords(c: &(usize, usize)) -> String {
     let y = c.1 as u8 + 49;
     format!("{}{}", x as char, y as char)
 }
-
-fn display_score(score: (u32, u32, u32)) {}
