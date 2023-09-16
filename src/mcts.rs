@@ -40,7 +40,7 @@ impl Node {
         let (is_end_state, endstate) = match board.play_move(&move_) {
             Ok(BoardState::Ongoing) => (
                 false,
-                Node::simulate_random_playout(&mut board.clone(), player.opponent()),
+                Node::simulate_random_playout(&mut board.clone(), player),
             ),
             Ok(BoardState::Ended(endstate)) => (true, endstate),
             Err(msg) => panic!(
@@ -65,11 +65,10 @@ impl Node {
     }
 
     fn simulate_random_playout(board: &mut Board, player: Case) -> EndState {
-        let mut curr_player = player.opponent();
+        let mut curr_player = player;
         loop {
             let mut rng = thread_rng();
-            let game_state =
-                board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
+            let game_state = board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
@@ -87,7 +86,6 @@ impl Node {
         if winner == self.turn {
             self.wins += 1
         }
-        
     }
 
     fn update_fully_expanded(&mut self) {
@@ -236,8 +234,8 @@ impl MCTS {
             .build()
             .unwrap();
 
-		pool.scope(|scoped| {
-			let playout_budget = self.playout_budget;
+        pool.scope(|scoped| {
+            let playout_budget = self.playout_budget;
             for child in self.root.children.values_mut() {
                 scoped.spawn(move |_| {
                     for _ in 0..playout_budget / num_moves {
@@ -245,9 +243,9 @@ impl MCTS {
                     }
                 });
             }
-		});
+        });
 
-		self.get_best_move_and_promote_child()
+        self.get_best_move_and_promote_child()
     }
 
     fn get_opponents_last_move(&self, board: &Board) -> Option<(usize, usize)> {
