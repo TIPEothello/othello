@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use crate::board::{self, Board, BoardState, Case, EndState};
 use crate::mcts;
 use crate::minimax::{self, Tree};
-use crossterm::cursor::MoveDown;
+use crossterm::cursor::{MoveDown, MoveUp};
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
@@ -131,8 +131,13 @@ impl Player {
         }
     }
 
-    pub async fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
-        let vec: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
+    pub fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
+        let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
+        display_score(
+            score.lock().unwrap().clone(),
+            n,
+            (&self.strategy.0, &self.strategy.1),
+        );
         (0..n).into_par_iter().for_each(|i| {
             let mut board = Board::new();
             let mut player1 = new_player_api(
@@ -164,17 +169,19 @@ impl Player {
                     current_player.update_board(&board);
                     other.update_board(&board);
                 } else if let BoardState::Ended(end_state) = state {
-                    println!("finished game {i}");
-                    let mut locked = vec.lock().unwrap();
+                    let mut locked = score.lock().unwrap();
                     match end_state {
                         EndState::Winner(Case::Black) => locked.0 += 1,
                         EndState::Winner(Case::White) => locked.1 += 1,
                         EndState::Winner(Case::Empty) => locked.2 += 1,
                     }
+                    go_3_lines_up();
+                    display_score(locked.clone(), n, (&self.strategy.0, &self.strategy.1));
+                    break;
                 }
             }
         });
-        let games_result = *vec.lock().unwrap();
+        let games_result = *score.lock().unwrap();
         games_result
     }
 }
@@ -334,4 +341,34 @@ pub fn print_coords(c: &(usize, usize)) -> String {
     let x = c.0 as u8 + 65;
     let y = c.1 as u8 + 49;
     format!("{}{}", x as char, y as char)
+}
+
+fn display_score(score: (u32, u32, u32), n: u32, strategy: (&Strategy, &Strategy)) {
+    let (black, white, draw) = score;
+    let mut black_label = format!("Black ({:?}) :", strategy.0,);
+    let mut white_label = format!("White ({:?}):", strategy.1,);
+    let mut draw_label = format!("Draw:",);
+    let longest = black_label
+        .len()
+        .max(white_label.len())
+        .max(draw_label.len());
+    black_label.push_str(" ".repeat(longest - black_label.len()).as_str());
+    white_label.push_str(" ".repeat(longest - white_label.len()).as_str());
+    draw_label.push_str(" ".repeat(longest - draw_label.len()).as_str());
+    let black_p = black as f32 / n as f32 * 100.0;
+    let white_p = white as f32 / n as f32 * 100.0;
+    let draw_p = draw as f32 / n as f32 * 100.0;
+    let black_score = "▮".repeat(black_p as usize) + " ".repeat(100 - black_p as usize).as_str();
+
+    let white_score = "▮".repeat(white_p as usize) + " ".repeat(100 - white_p as usize).as_str();
+    let draw_score = "▮".repeat(draw_p as usize) + " ".repeat(100 - draw_p as usize).as_str();
+    println!(
+        "{black_label} [{}] {black_p:.2} %\n{white_label} [{}] {white_p:.2} %\n{draw_label} [{}] {draw_p:.2} %",
+        black_score, white_score, draw_score
+    );
+}
+
+#[inline]
+fn go_3_lines_up() {
+    crossterm::queue!(stdout(), MoveUp(3)).unwrap();
 }

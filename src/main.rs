@@ -8,9 +8,9 @@ mod rules;
 async fn main() {
     let mut player = player::Player::new((
         player::Strategy::MCTS {
-            playout_budget: 20000,
+            playout_budget: 4000,
         },
-        player::Strategy::Minimax { depth: 6 },
+        player::Strategy::Minimax { depth: 4 },
     ));
-    player.progressive_play();
+    player.play_games(100);
 }
