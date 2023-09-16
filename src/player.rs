@@ -21,7 +21,7 @@ use crossterm::cursor::MoveDown;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use crossterm::QueueableCommand;
 use rand::seq::SliceRandom;
-
+use rayon::prelude::*;
 #[derive(Debug, Clone, Copy)]
 pub enum Strategy {
     Random,
@@ -128,51 +128,59 @@ impl Player {
         use tokio::task::spawn;
         let mut games_result = (0, 0, 0); // Black White Draw
 
-        for _ in 0..n {
-            let mut board = Board::new();
-            let mut player1 = PlayerAPI::new(
-                self.strategy.0,
-                PlayStyle::Automatic,
-                Case::Black,
-                &board.clone(),
-            );
-            let mut player2 = PlayerAPI::new(
-                self.strategy.1,
-                PlayStyle::Automatic,
-                Case::White,
-                &board.clone(),
-            );
-            loop {
-                let (current_player, other) = match board.get_turn() {
-                    Case::Black => (&mut player1, &mut player2),
-                    Case::White => (&mut player2, &mut player1),
-                    Case::Empty => panic!("wtf bro"),
-                };
-				
+        let games_result_par = (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let mut board = Board::new();
+                let mut player1 = PlayerAPI::new(
+                    self.strategy.0,
+                    PlayStyle::Automatic,
+                    Case::Black,
+                    &board.clone(),
+                );
+                let mut player2 = PlayerAPI::new(
+                    self.strategy.1,
+                    PlayStyle::Automatic,
+                    Case::White,
+                    &board.clone(),
+                );
+                loop {
+                    let (current_player, other) = match board.get_turn() {
+                        Case::Black => (&mut player1, &mut player2),
+                        Case::White => (&mut player2, &mut player1),
+                        Case::Empty => panic!(""),
+                    };
 
-                let move_ = current_player.get_move(&board).0;
+                    let move_ = current_player.get_move(&board).0;
 
-				println!("{:?}", move_);
+                    //println!("{:?}", move_);
 
-                let state = board.play_move(&move_).unwrap();
+                    let state = board.play_move(&move_).unwrap();
 
-                match state {
-                    BoardState::Ongoing => {
+                    if state == BoardState::Ongoing {
                         current_player.update_board(&board);
                         other.update_board(&board);
-                    }
-                    BoardState::Ended(end_state) => {
-                        
-                    	match end_state {
-                            EndState::Winner(Case::Black) => games_result.0 += 1,
-                            EndState::Winner(Case::White) => games_result.1 += 1,
-                            EndState::Winner(Case::Empty) => games_result.2 += 1,
-                        }
-                        break;
+                    } else if let BoardState::Ended(end_state) = state {
+                        println!("finished game {i}");
+                        return end_state;
                     }
                 }
-            }
-        }
+            })
+            .collect::<Vec<_>>();
+
+        games_result.0 = games_result_par
+            .iter()
+            .filter(|end_state| matches!(end_state, EndState::Winner(Case::Black)))
+            .count() as u32;
+        games_result.1 = games_result_par
+            .iter()
+            .filter(|end_state| matches!(end_state, EndState::Winner(Case::White)))
+            .count() as u32;
+
+        games_result.2 = games_result_par
+            .iter()
+            .filter(|end_state| matches!(end_state, EndState::Winner(Case::Empty)))
+            .count() as u32;
         games_result
     }
 }
