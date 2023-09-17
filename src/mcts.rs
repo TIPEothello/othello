@@ -1,13 +1,10 @@
 #![allow(non_snake_case)]
 
 use core::panic;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
+use std::collections::HashMap;
 
 use crate::board::{Board, BoardState, Case, EndState};
-use nohash_hasher::BuildNoHashHasher;
+use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
 const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
@@ -18,47 +15,10 @@ struct Node {
     wins: u64,
     turn: Case,
     state: Board,
-    children: HashMap<Move, Node, BuildNoHashHasher<Move>>,
+    children: FxHashMap<(usize, usize), Node>,
     is_fully_expanded: bool,
     exploration_constant: f64,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Move((usize, usize));
-
-impl Deref for Move {
-    type Target = (usize, usize);
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Move {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl std::convert::Into<Move> for &(usize, usize) {
-    fn into(self) -> Move {
-        Move(*self)
-    }
-}
-
-impl std::convert::From<(usize, usize)> for Move {
-    fn from(move_: (usize, usize)) -> Self {
-        Move(move_)
-    }
-}
-
-impl std::hash::Hash for Move {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        (self.deref().0 ^ self.deref().1).hash(state);
-    }
-}
-
-impl nohash_hasher::IsEnabled for Move {}
 
 impl Node {
     fn from_expansion(parent: &Node, move_: (usize, usize)) -> (Node, EndState) {
@@ -134,7 +94,7 @@ impl Node {
         let calculate_uct = |score: f64, c_visits: u64, p_visits: u64| {
             score + exploration_constant * (f64::ln(p_visits as f64) / c_visits as f64)
         };
-        match self.children.get(&move_.into()) {
+        match self.children.get(move_) {
             Some(child) => {
                 if child.is_fully_expanded {
                     0.
@@ -154,9 +114,9 @@ impl Node {
 
         let mut moves = self.state.available_moves(None);
         for move_ in moves.iter() {
-            if self.children.get(&Into::<Move>::into(move_)).is_none() {
+            if self.children.get(&move_).is_none() {
                 let (child_node, endstate) = Node::from_expansion(self, *move_);
-                self.children.insert(Into::<Move>::into(move_), child_node); // Ajoute le move aux children
+                self.children.insert(*move_, child_node); // Ajoute le move aux children
                 self.update_from_endstate(endstate); // Si le move est terminal on update les scores
                 self.update_fully_expanded(); // Si tous les children sont fully expanded on le note comme fully expanded
                 return endstate;
@@ -292,9 +252,9 @@ impl MCTS {
             let node_winrate = child.wins as f64 / child.played as f64;
             if node_winrate > best_winrate {
                 best_winrate = node_winrate;
-                best_moves = vec![*move_];
+                best_moves = vec![move_];
             } else if node_winrate == best_winrate {
-                best_moves.push(*move_);
+                best_moves.push(move_);
             }
         }
 
