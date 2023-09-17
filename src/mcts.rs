@@ -240,7 +240,7 @@ impl MCTS {
     fn update_with_opponents_move(&mut self, opp_move: (usize, usize), board: &Board) {
         match self.root.children.remove(&opp_move.into()) {
             Some(child_node) => self.root = child_node,
-            None => unreachable!(),
+            None => self.root.state = board.clone(),
         }
     }
 
