@@ -35,7 +35,7 @@ impl Player {
     pub fn new(strategy: (Strategy, Strategy)) -> Self {
         Player { strategy }
     }
-
+    #[allow(dead_code)]
     pub fn progressive_play(&mut self) {
         let is_win = cfg!(windows);
         println!("Running on Windows: {}", is_win);
@@ -117,6 +117,7 @@ impl Player {
         }
     }
 
+    #[allow(dead_code)]
     pub fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         display_score(
