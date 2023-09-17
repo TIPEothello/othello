@@ -16,17 +16,6 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn empty() -> Self {
-        Self {
-            depth: 0,
-            subtree: None,
-            moves: 0,
-            mov: None,
-            score: (0, 0),
-            cases: Board::new().cases,
-            value: None,
-        }
-    }
     pub fn from_board(board: &mut Board, mov: Option<(usize, usize)>, depth: u8) -> Self {
         let moves = board.available_moves(None);
         if depth == 0 || moves.is_empty() {

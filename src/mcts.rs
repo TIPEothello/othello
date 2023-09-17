@@ -11,8 +11,8 @@ const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
-    played: u32,
-    wins: u32,
+    played: u64,
+    wins: u64,
     turn: Case,
     state: Board,
     children: HashMap<(usize, usize), Node>,
@@ -93,7 +93,7 @@ impl Node {
         // Ratio of simulations from the given node that we didn't lose
         let get_node_not_loss_ratio = |n: &Node| n.wins as f64 / n.played as f64;
         // UCT formula
-        let calculate_uct = |score: f64, c_visits: u32, p_visits: u32| {
+        let calculate_uct = |score: f64, c_visits: u64, p_visits: u64| {
             score + exploration_constant * (f64::ln(p_visits as f64) / c_visits as f64)
         };
         match self.children.get(move_) {
@@ -209,24 +209,6 @@ impl MCTS {
             playout_budget,
             root,
             exploration_constant: EXPLORATION_PARAMETER,
-        }
-    }
-
-    pub fn empty() -> Self {
-        MCTS {
-            player: Case::Empty,
-            playout_budget: 0,
-            exploration_constant: 0.0,
-            root: Node {
-                played: 0,
-                wins: 0,
-                turn: Case::Empty,
-                state: Board::new(),
-                children: HashMap::new(),
-                is_terminal: false,
-                is_fully_expanded: false,
-                exploration_constant: 0.0,
-            },
         }
     }
 
