@@ -51,7 +51,7 @@ impl Player {
         let mut player2 =
             new_player_api(self.strategy.1, PlayStyle::Progressive, Case::White, &board);
         println!();
-		println!("{}", board);
+        println!("{}", board);
         loop {
             let mut quit = false;
             let (current_player, other, turn) = match board.get_turn() {
@@ -64,8 +64,16 @@ impl Player {
 
             let state = board.play_move(&move_).unwrap();
 
-			println!("{:?} played {}", if turn == 0 { self.strategy.0 } else { self.strategy.1 }, print_coords(&move_));
-			println!("{}", board);
+            println!(
+                "{:?} played {}",
+                if turn == 0 {
+                    self.strategy.0
+                } else {
+                    self.strategy.1
+                },
+                print_coords(&move_)
+            );
+            println!("{}", board);
 
             match state {
                 BoardState::Ongoing => {
@@ -164,14 +172,6 @@ impl Player {
         let games_result = *score.lock().unwrap();
         games_result
     }
-}
-
-pub struct PlayerAPI {
-    mcts: mcts::MCTS,
-    minimax: Tree,
-    strategy: Strategy,
-    playstyle: PlayStyle,
-    rng: rand::rngs::ThreadRng,
 }
 
 trait PlayerApiTrait {
