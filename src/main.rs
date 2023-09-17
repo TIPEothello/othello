@@ -12,5 +12,5 @@ async fn main() {
             playout_budget: 4000,
         },
     ));
-    player.play_games(100);
+    player.play_games(100, true);
 }

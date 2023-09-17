@@ -53,7 +53,7 @@ impl Player {
             let (current_player, other, turn) = match board.get_turn() {
                 Case::Black => (&mut player1, &mut player2, 0),
                 Case::White => (&mut player2, &mut player1, 1),
-                Case::Empty => panic!("wtf bro"),
+                Case::Empty => unreachable!(),
             };
 
             let move_ = current_player.get_move(&board);
@@ -118,13 +118,15 @@ impl Player {
     }
 
     #[allow(dead_code)]
-    pub fn play_games(&mut self, n: u32) -> (u32, u32, u32) {
+    pub fn play_games(&mut self, n: u32, verbose: bool) -> (u32, u32, u32) {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
-        display_score(
-            score.lock().unwrap().clone(),
-            n,
-            (&self.strategy.0, &self.strategy.1),
-        );
+        if verbose {
+            display_score(
+                score.lock().unwrap().clone(),
+                n,
+                (&self.strategy.0, &self.strategy.1),
+            );
+        }
         (0..n).into_par_iter().for_each(|_| {
             let mut board = Board::new();
             let mut player1 = new_player_api(
@@ -160,9 +162,11 @@ impl Player {
                         EndState::Winner(Case::White) => locked.1 += 1,
                         EndState::Winner(Case::Empty) => locked.2 += 1,
                     }
-                    go_3_lines_up();
-                    display_score(locked.clone(), n, (&self.strategy.0, &self.strategy.1));
-                    break;
+                    if verbose {
+                        go_3_lines_up();
+                        display_score(locked.clone(), n, (&self.strategy.0, &self.strategy.1));
+                        break;
+                    }
                 }
             }
         });
