@@ -108,6 +108,8 @@ impl Node {
         }
     }
 
+
+	//Un round d'expansion
     fn expand(&mut self) -> EndState {
         if self.is_fully_expanded {
             return EndState::Winner(Case::Empty);
@@ -117,14 +119,17 @@ impl Node {
         for move_ in moves.iter() {
             if self.children.get(move_).is_none() {
                 let (child_node, endstate) = Node::from_expansion(self, *move_);
-                self.children.insert(*move_, child_node);
-                self.update_from_endstate(endstate);
-                self.update_fully_expanded();
+                self.children.insert(*move_, child_node);  // Ajoute le move aux children
+                self.update_from_endstate(endstate);			// Si le move est terminal on update les scores
+                self.update_fully_expanded();					// Si tous les children sont fully expanded on le note comme fully expanded
                 return endstate;
             }
         }
+		// Si on arrive là, tous les children ont déjà été visités
+		// donc il faut aller un niveau plus loin (en passant par le move choisi par l'UCT)
 
-        moves.sort_by(|m1, m2| {
+
+        moves.sort_by(|m1, m2| { //On sort les moves par UCT
             self.get_exploration_score(self.exploration_constant, m1)
                 .partial_cmp(&self.get_exploration_score(self.exploration_constant, m2))
                 .unwrap()
@@ -134,7 +139,7 @@ impl Node {
             let best_move = moves.pop().unwrap();
             let child = self.children.get_mut(&best_move).unwrap();
             if !child.is_fully_expanded {
-                let endstate = child.expand();
+                let endstate = child.expand(); //On expand le meilleur move qui n'est pas encore fully expanded
                 self.update_from_endstate(endstate);
                 self.update_fully_expanded();
                 return endstate;

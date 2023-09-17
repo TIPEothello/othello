@@ -51,18 +51,21 @@ impl Player {
         let mut player2 =
             new_player_api(self.strategy.1, PlayStyle::Progressive, Case::White, &board);
         println!();
+		println!("{}", board);
         loop {
-            println!("{}", board);
             let mut quit = false;
-            let (current_player, other) = match board.get_turn() {
-                Case::Black => (&mut player1, &mut player2),
-                Case::White => (&mut player2, &mut player1),
+            let (current_player, other, turn) = match board.get_turn() {
+                Case::Black => (&mut player1, &mut player2, 0),
+                Case::White => (&mut player2, &mut player1, 1),
                 Case::Empty => panic!("wtf bro"),
             };
 
             let move_ = current_player.get_move(&board);
 
             let state = board.play_move(&move_).unwrap();
+
+			println!("{:?} played {}", if turn == 0 { self.strategy.0 } else { self.strategy.1 }, print_coords(&move_));
+			println!("{}", board);
 
             match state {
                 BoardState::Ongoing => {
@@ -81,27 +84,6 @@ impl Player {
                         }
                     );
                     break;
-                }
-            }
-
-            loop {
-                match read().unwrap() {
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Enter,
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => break,
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Char('q'),
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => {
-                        quit = true;
-                        break;
-                    }
-                    _ => {}
                 }
             }
             loop {
@@ -138,7 +120,7 @@ impl Player {
             n,
             (&self.strategy.0, &self.strategy.1),
         );
-        (0..n).into_par_iter().for_each(|i| {
+        (0..n).into_par_iter().for_each(|_| {
             let mut board = Board::new();
             let mut player1 = new_player_api(
                 self.strategy.0,
@@ -160,8 +142,6 @@ impl Player {
                 };
 
                 let move_ = current_player.get_move(&board);
-
-                //println!("{:?}", move_);
 
                 let state = board.play_move(&move_).unwrap();
 
