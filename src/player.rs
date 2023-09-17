@@ -1,6 +1,6 @@
+use parking_lot::Mutex;
 use std::io::stdout;
 use std::process::exit;
-use std::sync::Mutex;
 
 use crate::board::{Board, BoardState, Case, EndState};
 use crate::mcts;
@@ -122,7 +122,7 @@ impl Player {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         if verbose {
             display_score(
-                score.lock().unwrap().clone(),
+                score.lock().clone(),
                 n,
                 (&self.strategy.0, &self.strategy.1),
             );
@@ -156,7 +156,7 @@ impl Player {
                     current_player.update_board(&board);
                     other.update_board(&board);
                 } else if let BoardState::Ended(end_state) = state {
-                    let mut locked = score.lock().unwrap();
+                    let mut locked = score.lock();
                     match end_state {
                         EndState::Winner(Case::Black) => locked.0 += 1,
                         EndState::Winner(Case::White) => locked.1 += 1,
@@ -170,7 +170,7 @@ impl Player {
                 }
             }
         });
-        let games_result = *score.lock().unwrap();
+        let games_result = *score.lock();
         games_result
     }
 }
