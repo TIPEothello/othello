@@ -1,4 +1,4 @@
-#![allow(non_snake_case, unused_variables, dead_code)]
+#![allow(non_snake_case)]
 
 use core::panic;
 use std::collections::HashMap;
@@ -16,7 +16,6 @@ struct Node {
     turn: Case,
     state: Board,
     children: HashMap<(usize, usize), Node>,
-    is_terminal: bool,
     is_fully_expanded: bool,
     exploration_constant: f64,
 }
@@ -39,7 +38,6 @@ impl Node {
         let mut node = Node {
             state: board,
             turn: player,
-            is_terminal: is_end_state,
             is_fully_expanded: is_end_state,
             played: 0,
             wins: 0,
@@ -108,8 +106,7 @@ impl Node {
         }
     }
 
-
-	//Un round d'expansion
+    //Un round d'expansion
     fn expand(&mut self) -> EndState {
         if self.is_fully_expanded {
             return EndState::Winner(Case::Empty);
@@ -119,17 +116,17 @@ impl Node {
         for move_ in moves.iter() {
             if self.children.get(move_).is_none() {
                 let (child_node, endstate) = Node::from_expansion(self, *move_);
-                self.children.insert(*move_, child_node);  // Ajoute le move aux children
-                self.update_from_endstate(endstate);			// Si le move est terminal on update les scores
-                self.update_fully_expanded();					// Si tous les children sont fully expanded on le note comme fully expanded
+                self.children.insert(*move_, child_node); // Ajoute le move aux children
+                self.update_from_endstate(endstate); // Si le move est terminal on update les scores
+                self.update_fully_expanded(); // Si tous les children sont fully expanded on le note comme fully expanded
                 return endstate;
             }
         }
-		// Si on arrive là, tous les children ont déjà été visités
-		// donc il faut aller un niveau plus loin (en passant par le move choisi par l'UCT)
+        // Si on arrive là, tous les children ont déjà été visités
+        // donc il faut aller un niveau plus loin (en passant par le move choisi par l'UCT)
 
-
-        moves.sort_by(|m1, m2| { //On sort les moves par UCT
+        moves.sort_by(|m1, m2| {
+            //On sort les moves par UCT
             self.get_exploration_score(self.exploration_constant, m1)
                 .partial_cmp(&self.get_exploration_score(self.exploration_constant, m2))
                 .unwrap()
@@ -197,7 +194,6 @@ impl MCTS {
             state: board,
             turn: player.opponent(),
             is_fully_expanded: false,
-            is_terminal: false,
             played: 0,
             wins: 0,
             children: HashMap::new(),

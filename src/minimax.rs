@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_variables)]
-
 use crate::board::{Board, Case};
 use rayon::prelude::*;
 use std::fmt::{Display, Formatter};
@@ -96,7 +94,7 @@ pub fn minimax(tree: &mut Tree, color: Case) -> Tree {
         mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate(original_score, tree, color);
+            let val = evaluate(tree, color);
             tree.value = Some(val);
             return val;
         }
@@ -155,7 +153,7 @@ pub fn matrix_eval(cases: &[[Case; 8]; 8]) -> (isize, isize) {
     res
 }
 
-pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32 {
+pub fn evaluate(tree: &Tree, color: Case) -> i32 {
     let score = tree.score;
     let filled = score.0 + score.1;
     let balance = if color == Case::Black {
@@ -176,31 +174,4 @@ pub fn evaluate(original_score: (usize, usize), tree: &Tree, color: Case) -> i32
         };
         result
     }
-}
-
-fn material_count(original_score: (usize, usize), tree: &Tree, color: Case) -> isize {
-    let mut res = (tree.score.0 - tree.score.1 - original_score.0 + original_score.1) as isize;
-    if color == Case::White {
-        res = -res;
-    }
-    res
-}
-
-fn position_evaluation(tree: &Tree, color: Case) -> isize {
-    if color == Case::White {
-        matrix_eval(&tree.cases).0
-    } else {
-        matrix_eval(&tree.cases).1
-    }
-}
-
-fn randomness_factor() -> isize {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let random: isize = rng.gen_range(-10..10);
-    random
-}
-
-pub fn freedom_factor(tree: &Tree) -> isize {
-    tree.moves as isize
 }

@@ -1,18 +1,17 @@
-#![allow(dead_code, unused_imports)]
-use std::cmp::Ordering;
 use std::io::stdout;
-use std::process::{exit, ExitCode};
+use std::process::exit;
 use std::sync::Mutex;
 
-use crate::board::{self, Board, BoardState, Case, EndState};
+use crate::board::{Board, BoardState, Case, EndState};
 use crate::mcts;
-use crate::minimax::{self, Tree};
-use crossterm::cursor::{MoveDown, MoveUp};
+use crate::minimax::Tree;
+use crossterm::cursor::MoveUp;
 use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
-use crossterm::QueueableCommand;
+
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
 pub enum Strategy {
     Random,
     Greedy,
@@ -21,23 +20,20 @@ pub enum Strategy {
     MCTS { playout_budget: usize },
 }
 
+#[allow(unused)]
 pub enum PlayStyle {
     Automatic,
     Progressive,
 }
 
 pub struct Player {
-    board: Board,
     strategy: (Strategy, Strategy),
 }
 
 impl Player {
     /// New players (Black,white)
     pub fn new(strategy: (Strategy, Strategy)) -> Self {
-        Player {
-            board: Board::new(),
-            strategy,
-        }
+        Player { strategy }
     }
 
     pub fn progressive_play(&mut self) {

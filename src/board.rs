@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::rules::{check_direction, is_legal_move, is_legal_move_with_gain};
 use ansi_term::{Colour, Colour::*, Style};
 use std::fmt::Display;
@@ -63,8 +61,6 @@ pub const DIRECTIONS: [(i8, i8); 8] = [
     (1, -1),
 ];
 
-const MID: [(usize, usize); 4] = [(3, 3), (3, 4), (4, 3), (4, 4)];
-
 impl Board {
     /// Create a new board
     /// # Returns
@@ -81,35 +77,6 @@ impl Board {
         board.cases[4][4] = Case::White;
         board.cases[3][4] = Case::Black;
         board.cases[4][3] = Case::Black;
-        board
-    }
-
-    /// Create a board from a 2d-array of cases (8x8)
-    /// # Returns
-    /// * Board
-    pub fn from_cases(cases: [[Case; 8]; 8]) -> Self {
-        Board {
-            cases,
-            history: History {
-                moves: {
-                    let mut v = Vec::<(usize, usize)>::with_capacity(60);
-                    for i in 0..8 {
-                        for j in 0..8 {
-                            if cases[i][j] != Case::Empty && !MID.contains(&(i, j)) {
-                                v.push((i, j));
-                            }
-                        }
-                    }
-                    v
-                },
-                history: Vec::<[[Case; 8]; 8]>::with_capacity(60),
-            },
-        }
-    }
-
-    pub fn from_moves(moves: &[(usize, usize)]) -> Self {
-        let mut board = Board::new();
-        board.play_moves(moves).unwrap();
         board
     }
 
@@ -250,56 +217,6 @@ impl Board {
             .truncate(self.history.history.len() - num);
         self.history.moves.truncate(self.history.moves.len() - num);
     }
-
-    pub fn play_moves(&mut self, moves: &[(usize, usize)]) -> Result<BoardState, &str> {
-        if moves.is_empty() {
-            panic!("bro...")
-        }
-        let mut last_move = BoardState::Ongoing;
-        for m in moves.iter() {
-            let mover = self.play_move(m);
-            if mover.is_err() {
-                println!("Error: {:?} \n{}", moves, self);
-                panic!("");
-            }
-            last_move = mover.unwrap();
-        }
-        Ok(last_move)
-    }
-
-    pub fn to_u64(&self) -> (u64, u64) {
-        let mut res1: u64 = 0;
-        let mut res2: u64 = 0;
-        for i in 0..8 {
-            for j in 0..8 {
-                res1 |= (self.cases[i][j] != Case::Empty) as u64;
-                res2 |= (self.cases[i][j] == Case::Black) as u64;
-                if i == j && j == 7 {
-                    continue;
-                }
-                res1 <<= 1;
-                res2 <<= 1;
-            }
-        }
-        (res1, res2)
-    }
-
-    pub fn from_u64(input: (u64, u64)) -> Self {
-        let mut cases: [[Case; 8]; 8] = [[Case::Empty; 8]; 8];
-        for i in 0..8 {
-            for j in 0..8 {
-                let k = 1_u64 << (64 - 8 * i - j - 1);
-                if (input.0 & k) != 0 {
-                    cases[i][j] = if (input.1 & k) != 0 {
-                        Case::Black
-                    } else {
-                        Case::White
-                    }
-                }
-            }
-        }
-        Board::from_cases(cases)
-    }
 }
 
 impl Display for Board {
@@ -360,16 +277,6 @@ impl Display for Board {
 }
 
 #[test]
-fn test_u64() {
-    let board = Board::new();
-    let value = board.to_u64();
-    assert_eq!(value.0, 0x0000001818000000);
-    assert_eq!(value.1, 0x0000000810000000);
-    let remade = Board::from_u64((0x000f001818000000, 0x000a000810000000));
-    println!("{}", remade);
-}
-
-#[test]
 fn play_move_test() {
     let mut board = Board::new();
     board
@@ -412,12 +319,6 @@ fn reset_test() {
 
 pub struct Move {
     pub move_: (usize, usize),
-}
-
-impl Move {
-    pub fn new(move_: (usize, usize)) -> Self {
-        Self { move_ }
-    }
 }
 
 impl Display for Move {
