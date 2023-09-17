@@ -206,7 +206,7 @@ impl MCTS {
 
     pub fn search(&mut self, board: &Board) -> (usize, usize) {
         if let Some(opp_move) = self.get_opponents_last_move(board) {
-            self.update_with_opponents_move(opp_move, board);
+            self.update_with_opponents_move(opp_move);
         }
 
         let num_moves = board.available_moves(None).len();
@@ -237,7 +237,7 @@ impl MCTS {
         board.history.moves.last().copied()
     }
 
-    fn update_with_opponents_move(&mut self, opp_move: (usize, usize), board: &Board) {
+    fn update_with_opponents_move(&mut self, opp_move: (usize, usize)) {
         match self.root.children.remove(&opp_move.into()) {
             Some(child_node) => self.root = child_node,
             None => unreachable!(),
