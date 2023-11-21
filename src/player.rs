@@ -6,7 +6,6 @@ use crate::board::{Board, BoardState, Case, EndState};
 use crate::mcts;
 use crate::minimax::Tree;
 use crossterm::cursor::MoveUp;
-use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
@@ -49,7 +48,6 @@ impl Player {
         println!();
         println!("{}", board);
         loop {
-            let mut quit = false;
             let (current_player, other, turn) = match board.get_turn() {
                 Case::Black => (&mut player1, &mut player2, 0),
                 Case::White => (&mut player2, &mut player1, 1),
@@ -89,30 +87,6 @@ impl Player {
                     );
                     break;
                 }
-            }
-            loop {
-                match read().unwrap() {
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Enter,
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => break,
-                    Event::Key(KeyEvent {
-                        code: KeyCode::Char('q'),
-                        modifiers: KeyModifiers::NONE,
-                        kind: KeyEventKind::Press,
-                        state: KeyEventState::NONE,
-                    }) => {
-                        quit = true;
-                        break;
-                    }
-                    _ => {}
-                }
-            }
-            if quit {
-                println!("Quitting...");
-                return;
             }
         }
     }

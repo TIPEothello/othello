@@ -7,7 +7,7 @@ use crate::board::{Board, BoardState, Case, EndState};
 use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
-const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
+const EXPLORATION_PARAMETER: f64 = 2.;//std::f64::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -208,27 +208,10 @@ impl MCTS {
         if let Some(opp_move) = self.get_opponents_last_move(board) {
             self.update_with_opponents_move(opp_move, board);
         }
-
-        let num_moves = board.available_moves(None).len();
-        while self.root.children.len() < num_moves {
+        
+        for _ in 0..self.playout_budget {
             self.root.expand();
         }
-
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(8)
-            .build()
-            .unwrap();
-
-        pool.scope(|scoped| {
-            let playout_budget = self.playout_budget;
-            for child in self.root.children.values_mut() {
-                scoped.spawn(move |_| {
-                    for _ in 0..playout_budget / num_moves {
-                        child.expand();
-                    }
-                });
-            }
-        });
 
         self.get_best_move_and_promote_child()
     }
