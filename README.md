@@ -10,3 +10,7 @@ The first approach to this problem was to use the Minimax algorithm. This algori
 
 ## Problems with Minimax
 
+
+
+
+https://dke.maastrichtuniversity.nl/m.winands/documents/CIG2016_RAVE.pdf RAVE
