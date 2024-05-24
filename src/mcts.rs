@@ -238,22 +238,28 @@ impl MCTS {
         }
         let move_ = {
             if self.root.is_fully_expanded && self.final_solve {
+                let mut is_winning = false;
                 if self.root.winning_state.is_none() {
                     self.root.generate_winning_state();
-                    if self.root.winning_state.unwrap() == self.root.turn {
+                    if self.root.winning_state.unwrap() == self.root.turn.opponent() {
                         println!("I'm winning !");
+                        is_winning = true;
                     }
                 }
                 let mut rng = thread_rng();
                 let mut moves = Vec::new();
 
                 for (m, n) in &self.root.children {
-                    if n.winning_state == self.root.winning_state {
-                        moves.push(m.clone());
+                    if n.winning_state.unwrap() == self.root.winning_state.unwrap() {
+                        moves.push((m.clone(), n));
                     }
                 }
 
-                *moves.choose(&mut rng).unwrap()
+                let (m, n) = *moves.choose(&mut rng).unwrap();
+                if is_winning {
+                    //println!("{:?}", n.winning_state);
+                }
+                m
             } else {
                 for _ in 0..self.playout_budget {
                     self.root.expand();
