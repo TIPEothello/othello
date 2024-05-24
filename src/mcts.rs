@@ -55,7 +55,8 @@ impl Node {
     fn simulate_random_playout(board: &mut Board, player: Case) -> EndState {
         let mut curr_player = player;
         loop {
-            let game_state = board.play_move(&board.move_with_highest_gain().unwrap());
+            let mut rng = thread_rng();
+            let game_state = board.play_move(&board.available_moves(None).choose(&mut rng).unwrap());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
@@ -237,10 +238,7 @@ impl MCTS {
         let move_ = {
             if self.root.is_fully_expanded && self.final_solve {
                 if self.root.winning_state.is_none() {
-                    println!("[MCTS] Generating solved tree !");
                     self.root.generate_winning_state();
-                    println!("Can I win ? : {}", self.root.winning_state.unwrap());
-                    //println!("{}", self);
                 }
                 let mut rng = thread_rng();
                 let mut moves = Vec::new();
