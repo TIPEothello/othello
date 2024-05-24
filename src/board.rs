@@ -200,6 +200,18 @@ impl Board {
         (black, white)
     }
 
+    pub fn is_ended(&self) -> bool {
+        self.available_moves(None).is_empty()
+    }
+
+    pub fn current_winner(&self) -> Case {
+        match self.score() {
+            (b, w) if b == w => Case::Empty,
+            (b, w) if b > w => Case::Black,
+            (_, _) => Case::White,
+        }
+    }
+
     pub fn reset(&mut self, num: usize) {
         if num == 0 || self.history.history.is_empty() {
             return;

@@ -16,7 +16,7 @@ pub enum Strategy {
     Greedy,
     Manual,
     Minimax { depth: u8 },
-    MCTS { playout_budget: usize },
+    MCTS { playout_budget: usize, final_solve: bool },
 }
 
 #[allow(unused)]
@@ -96,7 +96,7 @@ impl Player {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         if verbose {
             display_score(
-                score.lock().clone(),
+                *score.lock(),
                 n,
                 (&self.strategy.0, &self.strategy.1),
             );
@@ -138,7 +138,7 @@ impl Player {
                     }
                     if verbose {
                         go_3_lines_up();
-                        display_score(locked.clone(), n, (&self.strategy.0, &self.strategy.1));
+                        display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
                         break;
                     }
                 }
@@ -170,8 +170,8 @@ fn new_player_api(
             Box::new(ManualPlayerAPI)
         }
         Strategy::Minimax { depth } => Box::new(MinimaxPlayerAPI::new(depth, board)),
-        Strategy::MCTS { playout_budget } => {
-            Box::new(MctsPlayerAPI::new(playout_budget, player, board))
+        Strategy::MCTS { playout_budget, final_solve } => {
+            Box::new(MctsPlayerAPI::new(playout_budget, final_solve, player, board))
         }
     }
 }
@@ -180,8 +180,8 @@ struct MctsPlayerAPI(mcts::MCTS);
 
 impl MctsPlayerAPI {
     #[inline]
-    fn new(playout_budget: usize, player: Case, board: &Board) -> Self {
-        Self(mcts::MCTS::new(player, playout_budget, board.clone()))
+    fn new(playout_budget: usize, final_solve: bool, player: Case, board: &Board) -> Self {
+        Self(mcts::MCTS::new(player, final_solve, playout_budget, board.clone()))
     }
 }
 
@@ -302,7 +302,7 @@ fn display_score(score: (u32, u32, u32), n: u32, strategy: (&Strategy, &Strategy
     let (black, white, draw) = score;
     let mut black_label = format!("Black ({:?}) :", strategy.0,);
     let mut white_label = format!("White ({:?}):", strategy.1,);
-    let mut draw_label = format!("Draw:",);
+    let mut draw_label = "Draw:".to_string();
     let longest = black_label
         .len()
         .max(white_label.len())

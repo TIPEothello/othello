@@ -7,7 +7,7 @@ use crate::board::{Board, BoardState, Case, EndState};
 use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
-const EXPLORATION_PARAMETER: f64 = 2.;//std::f64::consts::SQRT_2;
+const EXPLORATION_PARAMETER: f64 = 2.; //std::f64::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -18,6 +18,7 @@ struct Node {
     children: FxHashMap<(usize, usize), Node>,
     is_fully_expanded: bool,
     exploration_constant: f64,
+    winning_state: Option<Case>
 }
 
 impl Node {
@@ -43,6 +44,7 @@ impl Node {
             wins: 0,
             children: HashMap::default(),
             exploration_constant: parent.exploration_constant,
+            winning_state: None
         };
 
         node.update_from_endstate(endstate);
@@ -53,8 +55,7 @@ impl Node {
     fn simulate_random_playout(board: &mut Board, player: Case) -> EndState {
         let mut curr_player = player;
         loop {
-            let mut rng = thread_rng();
-            let game_state = board.play_move(board.available_moves(None).choose(&mut rng).unwrap());
+            let game_state = board.play_move(&board.move_with_highest_gain().unwrap());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
@@ -114,7 +115,7 @@ impl Node {
 
         let mut moves = self.state.available_moves(None);
         for move_ in moves.iter() {
-            if self.children.get(&move_).is_none() {
+            if !self.children.contains_key(move_) {
                 let (child_node, endstate) = Node::from_expansion(self, *move_);
                 self.children.insert(*move_, child_node); // Ajoute le move aux children
                 self.update_from_endstate(endstate); // Si le move est terminal on update les scores
@@ -132,9 +133,8 @@ impl Node {
                 .unwrap()
         });
 
-        while !moves.is_empty() {
-            let best_move = moves.pop().unwrap();
-            let child = self.children.get_mut(&best_move.into()).unwrap();
+        while let Some(best_move) = moves.pop() {
+            let child = self.children.get_mut(&best_move).unwrap();
             if !child.is_fully_expanded {
                 let endstate = child.expand(); //On expand le meilleur move qui n'est pas encore fully expanded
                 self.update_from_endstate(endstate);
@@ -144,6 +144,29 @@ impl Node {
         }
 
         panic!("Expand is broken !")
+    }
+
+    pub fn update_winning_state(turn: Case, current: Case, to_add: Case) -> Case {
+        if turn != current {
+            if to_add != turn.opponent() {
+                return to_add;
+            }
+            return current;
+        }
+        current
+    }
+
+    pub fn generate_winning_state(&mut self) -> () {
+        if self.state.is_ended() {
+            self.winning_state = Some(self.state.current_winner());
+        } else {
+            let mut wstate = self.turn.opponent();
+            for node in self.children.values_mut() {
+                node.generate_winning_state();
+                wstate = Node::update_winning_state(self.turn, wstate, node.winning_state.unwrap());
+            }
+            self.winning_state = Some(wstate);
+        }
     }
 }
 
@@ -184,10 +207,11 @@ impl std::fmt::Display for MCTS {
 pub struct MCTS {
     root: Node,
     playout_budget: usize,
+    final_solve: bool
 }
 
 impl MCTS {
-    pub fn new(player: Case, playout_budget: usize, board: Board) -> MCTS {
+    pub fn new(player: Case, final_solve: bool, playout_budget: usize, board: Board) -> MCTS {
         let root = Node {
             state: board,
             turn: player.opponent(),
@@ -196,11 +220,13 @@ impl MCTS {
             wins: 0,
             children: HashMap::default(),
             exploration_constant: EXPLORATION_PARAMETER,
+            winning_state: None
         };
 
         MCTS {
             playout_budget,
             root,
+            final_solve
         }
     }
 
@@ -208,12 +234,32 @@ impl MCTS {
         if let Some(opp_move) = self.get_opponents_last_move(board) {
             self.update_with_opponents_move(opp_move, board);
         }
-        
-        for _ in 0..self.playout_budget {
-            self.root.expand();
-        }
 
-        self.get_best_move_and_promote_child()
+        if self.root.is_fully_expanded && self.final_solve {
+            if self.root.winning_state.is_none() {
+                println!("[MCTS] Generating solved tree !");
+                self.root.generate_winning_state();
+                println!("Can I win ? : {}", self.root.winning_state.unwrap());
+                //println!("{}", self);
+            }
+            let mut rng = thread_rng();
+            let mut moves = Vec::new();
+
+            for (m,n) in &self.root.children {
+                if n.winning_state == self.root.winning_state {
+                    moves.push(m.clone())
+                }
+            }
+            
+            *moves.choose(&mut rng).unwrap()
+
+        } else {
+            for _ in 0..self.playout_budget {
+                self.root.expand();
+            }
+
+            self.get_best_move_and_promote_child()
+        }
     }
 
     fn get_opponents_last_move(&self, board: &Board) -> Option<(usize, usize)> {
@@ -221,7 +267,7 @@ impl MCTS {
     }
 
     fn update_with_opponents_move(&mut self, opp_move: (usize, usize), board: &Board) {
-        match self.root.children.remove(&opp_move.into()) {
+        match self.root.children.remove(&opp_move) {
             Some(child_node) => self.root = child_node,
             None => self.root.state = board.clone(),
         }
@@ -243,9 +289,22 @@ impl MCTS {
 
         let mut rng = thread_rng();
         let &best_move = best_moves.choose(&mut rng).unwrap();
-        let new_root = self.root.children.remove(&best_move.into()).unwrap();
+        let new_root = self.root.children.remove(&best_move).unwrap();
         self.root = new_root;
 
         best_move
+    }
+}
+
+
+#[test]
+fn update_winning_state_test() {
+    let turn = Case::White;
+    let mut current = turn.opponent();
+    let states = [Case::Black, Case::Black, Case::Empty, Case::White, Case::Black, Case::Empty, Case::White];
+    let expected = [Case::Black, Case::Black, Case::Empty, Case::White, Case::White, Case::White, Case::White];
+    for i in 0..7 {
+        current = Node::update_winning_state(turn, current, states[i]);
+        assert_eq!(current, expected[i])
     }
 }
