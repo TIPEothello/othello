@@ -15,7 +15,10 @@ fn main() {
             playout_budget: *budget1,
             final_solve: true,
         },
-        player::Strategy::Minimax { depth: 4 },
+        player::Strategy::MCTS {
+            playout_budget: *budget2,
+            final_solve: false,
+        },
     ));
     player.play_games(100, true);
 }

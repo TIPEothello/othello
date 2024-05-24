@@ -246,7 +246,7 @@ impl MCTS {
                 if self.root.winning_state.is_none() {
                     self.root.generate_winning_state();
                     if self.root.winning_state.unwrap() == self.root.turn.opponent() {
-                        println!("I'm winning !");
+                        //println!("I'm winning !");
                         is_winning = true;
                     }
                 }

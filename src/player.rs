@@ -138,18 +138,15 @@ impl Player {
                         EndState::Winner(Case::Empty) => locked.2 += 1,
                     }
                     if verbose {
-                        //go_3_lines_up();
-                        //display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
+                        go_3_lines_up();
+                        display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
                         break;
                     }
                 }
             }
         });
         let games_result = *score.lock();
-        println!(
-            "Black: {}, White: {}, Draw: {}",
-            games_result.0, games_result.1, games_result.2
-        );
+
         games_result
     }
 }
