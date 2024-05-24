@@ -162,10 +162,14 @@ impl Node {
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
-            let mut wstate = self.turn.opponent();
+            let mut wstate = self.turn;
             for node in self.children.values_mut() {
                 node.generate_winning_state();
-                wstate = Node::update_winning_state(self.turn, wstate, node.winning_state.unwrap());
+                wstate = Node::update_winning_state(
+                    self.turn.opponent(),
+                    wstate,
+                    node.winning_state.unwrap(),
+                );
             }
             self.winning_state = Some(wstate);
         }
