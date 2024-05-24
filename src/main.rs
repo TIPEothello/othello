@@ -13,12 +13,9 @@ fn main() {
     let mut player = player::Player::new((
         player::Strategy::MCTS {
             playout_budget: *budget1,
-            final_solve: true
+            final_solve: true,
         },
-        player::Strategy::MCTS {
-            playout_budget: *budget2,
-            final_solve: false
-        },
+        player::Strategy::Minimax { depth: 4 },
     ));
     player.play_games(100, true);
 }

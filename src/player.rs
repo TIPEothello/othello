@@ -15,8 +15,13 @@ pub enum Strategy {
     Random,
     Greedy,
     Manual,
-    Minimax { depth: u8 },
-    MCTS { playout_budget: usize, final_solve: bool },
+    Minimax {
+        depth: u8,
+    },
+    MCTS {
+        playout_budget: usize,
+        final_solve: bool,
+    },
 }
 
 #[allow(unused)]
@@ -95,11 +100,7 @@ impl Player {
     pub fn play_games(&mut self, n: u32, verbose: bool) -> (u32, u32, u32) {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         if verbose {
-            display_score(
-                *score.lock(),
-                n,
-                (&self.strategy.0, &self.strategy.1),
-            );
+            display_score(*score.lock(), n, (&self.strategy.0, &self.strategy.1));
         }
         (0..n).into_par_iter().for_each(|_| {
             let mut board = Board::new();
@@ -137,14 +138,18 @@ impl Player {
                         EndState::Winner(Case::Empty) => locked.2 += 1,
                     }
                     if verbose {
-                        go_3_lines_up();
-                        display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
+                        //go_3_lines_up();
+                        //display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
                         break;
                     }
                 }
             }
         });
         let games_result = *score.lock();
+        println!(
+            "Black: {}, White: {}, Draw: {}",
+            games_result.0, games_result.1, games_result.2
+        );
         games_result
     }
 }
@@ -170,9 +175,15 @@ fn new_player_api(
             Box::new(ManualPlayerAPI)
         }
         Strategy::Minimax { depth } => Box::new(MinimaxPlayerAPI::new(depth, board)),
-        Strategy::MCTS { playout_budget, final_solve } => {
-            Box::new(MctsPlayerAPI::new(playout_budget, final_solve, player, board))
-        }
+        Strategy::MCTS {
+            playout_budget,
+            final_solve,
+        } => Box::new(MctsPlayerAPI::new(
+            playout_budget,
+            final_solve,
+            player,
+            board,
+        )),
     }
 }
 
@@ -181,7 +192,12 @@ struct MctsPlayerAPI(mcts::MCTS);
 impl MctsPlayerAPI {
     #[inline]
     fn new(playout_budget: usize, final_solve: bool, player: Case, board: &Board) -> Self {
-        Self(mcts::MCTS::new(player, final_solve, playout_budget, board.clone()))
+        Self(mcts::MCTS::new(
+            player,
+            final_solve,
+            playout_budget,
+            board.clone(),
+        ))
     }
 }
 

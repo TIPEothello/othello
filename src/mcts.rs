@@ -56,7 +56,8 @@ impl Node {
         let mut curr_player = player;
         loop {
             let mut rng = thread_rng();
-            let game_state = board.play_move(&board.available_moves(None).choose(&mut rng).unwrap());
+            let game_state =
+                board.play_move(&board.available_moves(None).choose(&mut rng).unwrap());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
@@ -157,16 +158,19 @@ impl Node {
         current
     }
 
-    pub fn generate_winning_state(&mut self) -> () {
+    pub fn generate_winning_state(&mut self, turn: Case, first: bool) -> () {
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
             let mut wstate = self.turn.opponent();
             for node in self.children.values_mut() {
-                node.generate_winning_state();
+                node.generate_winning_state(turn.opponent(), false);
                 wstate = Node::update_winning_state(self.turn, wstate, node.winning_state.unwrap());
             }
             self.winning_state = Some(wstate);
+            if first && wstate == turn {
+                println!("I'm winning !");
+            }
         }
     }
 }
@@ -238,14 +242,14 @@ impl MCTS {
         let move_ = {
             if self.root.is_fully_expanded && self.final_solve {
                 if self.root.winning_state.is_none() {
-                    self.root.generate_winning_state();
+                    self.root.generate_winning_state(self.root.turn, true);
                 }
                 let mut rng = thread_rng();
                 let mut moves = Vec::new();
 
                 for (m, n) in &self.root.children {
                     if n.winning_state == self.root.winning_state {
-                        moves.push(m.clone())
+                        moves.push(m.clone());
                     }
                 }
 
