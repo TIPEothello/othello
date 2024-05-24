@@ -158,19 +158,16 @@ impl Node {
         current
     }
 
-    pub fn generate_winning_state(&mut self, turn: Case, first: bool) -> () {
+    pub fn generate_winning_state(&mut self) -> () {
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
             let mut wstate = self.turn.opponent();
             for node in self.children.values_mut() {
-                node.generate_winning_state(turn.opponent(), false);
+                node.generate_winning_state();
                 wstate = Node::update_winning_state(self.turn, wstate, node.winning_state.unwrap());
             }
             self.winning_state = Some(wstate);
-            if first && wstate == turn {
-                println!("I'm winning !");
-            }
         }
     }
 }
@@ -242,7 +239,10 @@ impl MCTS {
         let move_ = {
             if self.root.is_fully_expanded && self.final_solve {
                 if self.root.winning_state.is_none() {
-                    self.root.generate_winning_state(self.root.turn, true);
+                    self.root.generate_winning_state();
+                    if self.root.winning_state.unwrap() == self.root.turn {
+                        println!("I'm winning !");
+                    }
                 }
                 let mut rng = thread_rng();
                 let mut moves = Vec::new();
