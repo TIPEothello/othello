@@ -7,7 +7,7 @@ use crate::board::{Board, BoardState, Case, EndState};
 use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
-const EXPLORATION_PARAMETER: f64 = 2.; //std::f64::consts::SQRT_2;
+const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -95,7 +95,7 @@ impl Node {
         let get_node_not_loss_ratio = |n: &Node| n.wins as f64 / n.played as f64;
         // UCT formula
         let calculate_uct = |score: f64, c_visits: u64, p_visits: u64| {
-            score + exploration_constant * (f64::ln(p_visits as f64) / c_visits as f64)
+            score + exploration_constant * f64::sqrt(f64::ln(p_visits as f64) / c_visits as f64)
         };
         match self.children.get(move_) {
             Some(child) => {
@@ -158,7 +158,7 @@ impl Node {
         current
     }
 
-    pub fn generate_winning_state(&mut self) -> () {
+    pub fn generate_winning_state(&mut self) -> () { // Algorithme de recherche d'attracteur
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
@@ -242,13 +242,9 @@ impl MCTS {
         }
         let move_ = {
             if self.root.is_fully_expanded && self.final_solve {
-                let mut is_winning = false;
                 if self.root.winning_state.is_none() {
                     self.root.generate_winning_state();
-                    if self.root.winning_state.unwrap() == self.root.turn.opponent() {
-                        //println!("I'm winning !");
-                        is_winning = true;
-                    }
+                    //println!("[MCTS] Detected Winner : {}", self.root.winning_state.unwrap());
                 }
                 let mut rng = thread_rng();
                 let mut moves = Vec::new();
@@ -258,11 +254,7 @@ impl MCTS {
                         moves.push((m.clone(), n));
                     }
                 }
-
-                let (m, n) = *moves.choose(&mut rng).unwrap();
-                if is_winning {
-                    //println!("{:?}", n.winning_state);
-                }
+                let (m, _) = *moves.choose(&mut rng).unwrap();
                 m
             } else {
                 for _ in 0..self.playout_budget {
