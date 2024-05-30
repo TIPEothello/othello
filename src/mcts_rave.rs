@@ -8,6 +8,7 @@ use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
 const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
+const RAVE_CONST: f64 = 300.0;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -17,30 +18,35 @@ struct Node {
     state: Board,
     children: FxHashMap<(usize, usize), Node>,
     is_fully_expanded: bool,
+    reward_rave: i64,
+    played_rave: u64,
     exploration_constant: f64,
     winning_state: Option<Case>,
 }
 
 impl Node {
-    fn from_expansion(parent: &Node, move_: (usize, usize)) -> (Node, EndState) {
+    fn from_expansion(parent: &Node, mut moves: Vec<(usize, usize)>, move_: (usize, usize)) -> (Node, EndState, Vec<(usize, usize)>) {
         let mut board = parent.state.clone();
         let player = parent.turn.opponent();
-        let (is_end_state, endstate) = match board.play_move(&move_) {
+        let (is_end_state, (endstate, mut movs)) = match board.play_move(&move_) {
             Ok(BoardState::Ongoing) => (
                 false,
                 Node::simulate_random_playout(&mut board.clone(), player),
             ),
-            Ok(BoardState::Ended(endstate)) => (true, endstate),
+            Ok(BoardState::Ended(endstate)) => (true, (endstate, vec![])),
             Err(msg) => panic!(
                 "error in Node.from_expansion when calling board.play_move(): {}",
                 msg
             ),
         };
+        moves.append(&mut movs);
         let mut node = Node {
             state: board,
             turn: player,
             is_fully_expanded: is_end_state,
             played: 0,
+            played_rave: 0,
+            reward_rave: 0,
             reward: 0,
             children: HashMap::default(),
             exploration_constant: parent.exploration_constant,
@@ -49,20 +55,25 @@ impl Node {
 
         node.update_from_endstate(endstate);
 
-        (node, endstate)
+        (node, endstate, moves)
     }
 
-    fn simulate_random_playout(board: &mut Board, player: Case) -> EndState {
+    fn simulate_random_playout(
+        board: &mut Board,
+        player: Case,
+    ) -> (EndState, Vec<(usize, usize)>) {
         let mut curr_player = player;
+        let mut rng = thread_rng();
+        let mut moves: Vec<(usize, usize)> = Vec::new();
         loop {
-            let mut rng = thread_rng();
-            let game_state =
-                board.play_move(&board.available_moves(None).choose(&mut rng).unwrap());
+            let move_ = board.available_moves(None).choose(&mut rng).unwrap().clone();
+            let game_state = board.play_move(&move_);
+            moves.push(move_.clone());
             curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
                     BoardState::Ongoing => (),
-                    BoardState::Ended(endstate) => return endstate,
+                    BoardState::Ended(endstate) => return (endstate, moves),
                 },
                 Err(msg) => panic!("Err in Node.simulate_random_playout(): {}", msg),
             }
@@ -76,6 +87,23 @@ impl Node {
             self.reward += 1;
         } else if winner == self.turn.opponent() {
             self.reward -= 1;
+        }
+    }
+
+    fn update_from_endstate_rave(&mut self, endstate: EndState, moves: &Vec<(usize, usize)>) -> () {
+        let EndState::Winner(winner) = endstate;
+        let reward: i64 = if winner == self.turn {
+            1
+        } else if winner == self.turn.opponent() {
+            -1
+        } else {
+            0
+        };
+        for i in moves {
+            if let Some(c) = self.children.get_mut(&i) {
+                c.played_rave += 1;
+                c.reward_rave += reward;
+            }
         }
     }
 
@@ -93,18 +121,23 @@ impl Node {
     }
 
     fn get_exploration_score(&self, exploration_constant: f64, move_: &(usize, usize)) -> f64 {
-        // Ratio of simulations from the given node that we didn't lose
-        let get_node_not_loss_ratio = |n: &Node| n.reward as f64 / n.played as f64;
-        // UCT formula
-        let calculate_uct = |score: f64, c_visits: u64, p_visits: u64| {
-            score + exploration_constant * f64::sqrt(f64::ln(p_visits as f64) / c_visits as f64)
+        
+        let rave = |child: &Node, parent: &Node| {
+            let alpha = 0.0_f64.max((RAVE_CONST - (child.played as f64)) / RAVE_CONST);
+            let uct =  (child.reward as f64 / child.played as f64) + exploration_constant * f64::sqrt(f64::ln(parent.played as f64) / child.played as f64);
+            let amaf = if child.played_rave == 0 { 0.0_f64 } else { (child.reward_rave as f64)/(child.played_rave as f64) };
+            (1.0 - alpha) * uct + alpha * amaf
         };
+
+
         match self.children.get(move_) {
             Some(child) => {
                 if child.is_fully_expanded {
                     0.
+                } else if child.played == 0 {
+                    f64::INFINITY
                 } else {
-                    calculate_uct(get_node_not_loss_ratio(child), child.played, self.played)
+                    rave(child, self)
                 }
             }
             None => unreachable!(),
@@ -112,19 +145,21 @@ impl Node {
     }
 
     //Un round d'expansion
-    fn expand(&mut self) -> EndState {
+    fn expand(&mut self, movs: Vec<(usize, usize)>) -> (EndState, Vec<(usize, usize)>) {
         if self.is_fully_expanded {
-            return EndState::Winner(Case::Empty);
+            return (EndState::Winner(Case::Empty), movs);
         }
 
         let mut moves = self.state.available_moves(None);
         for move_ in moves.iter() {
             if !self.children.contains_key(move_) {
-                let (child_node, endstate) = Node::from_expansion(self, *move_);
+                let (child_node, endstate, mut movs) = Node::from_expansion(self, movs, *move_);
+                movs.push(*move_);
                 self.children.insert(*move_, child_node); // Ajoute le move aux children
                 self.update_from_endstate(endstate); // Si le move est terminal on update les scores
+                self.update_from_endstate_rave(endstate, &movs);
                 self.update_fully_expanded(); // Si tous les children sont fully expanded on le note comme fully expanded
-                return endstate;
+                return (endstate, movs);
             }
         }
         // Si on arrive là, tous les children ont déjà été visités
@@ -140,10 +175,11 @@ impl Node {
         while let Some(best_move) = moves.pop() {
             let child = self.children.get_mut(&best_move).unwrap();
             if !child.is_fully_expanded {
-                let endstate = child.expand(); //On expand le meilleur move qui n'est pas encore fully expanded
+                let (endstate, moves) = child.expand(moves); //On expand le meilleur move qui n'est pas encore fully expanded
                 self.update_from_endstate(endstate);
+                self.update_from_endstate_rave(endstate, &moves);
                 self.update_fully_expanded();
-                return endstate;
+                return (endstate, moves);
             }
         }
 
@@ -160,7 +196,8 @@ impl Node {
         current
     }
 
-    pub fn generate_winning_state(&mut self) -> () { // Algorithme de recherche d'attracteur
+    pub fn generate_winning_state(&mut self) -> () {
+        // Algorithme de recherche d'attracteur
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
@@ -179,26 +216,28 @@ impl Node {
 }
 
 #[derive(Debug, Clone)]
-pub struct MCTS {
+pub struct MCTSRave {
     root: Node,
     playout_budget: usize,
     final_solve: bool,
 }
 
-impl MCTS {
-    pub fn new(player: Case, final_solve: bool, playout_budget: usize, board: Board) -> MCTS {
+impl MCTSRave {
+    pub fn new(player: Case, final_solve: bool, playout_budget: usize, board: Board) -> MCTSRave {
         let root = Node {
             state: board,
             turn: player.opponent(),
             is_fully_expanded: false,
             played: 0,
             reward: 0,
+            reward_rave: 0,
+            played_rave: 0,
             children: HashMap::default(),
             exploration_constant: EXPLORATION_PARAMETER,
             winning_state: None,
         };
 
-        MCTS {
+        MCTSRave {
             playout_budget,
             root,
             final_solve,
@@ -227,7 +266,7 @@ impl MCTS {
                 m
             } else {
                 for _ in 0..self.playout_budget {
-                    self.root.expand();
+                    self.root.expand(vec![]);
                 }
 
                 self.get_best_move()

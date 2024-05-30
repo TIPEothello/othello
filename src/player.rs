@@ -4,6 +4,7 @@ use std::process::exit;
 
 use crate::board::{Board, BoardState, Case, EndState};
 use crate::mcts;
+use crate::mcts_rave;
 use crate::minimax::Tree;
 use crossterm::cursor::MoveUp;
 
@@ -19,6 +20,10 @@ pub enum Strategy {
         depth: u8,
     },
     MCTS {
+        playout_budget: usize,
+        final_solve: bool,
+    },
+    MCTSRave {
         playout_budget: usize,
         final_solve: bool,
     },
@@ -181,6 +186,15 @@ fn new_player_api(
             player,
             board,
         )),
+        Strategy::MCTSRave {
+            playout_budget,
+            final_solve,
+        } => Box::new(MctsRavePlayerAPI::new(
+            playout_budget,
+            final_solve,
+            player,
+            board,
+        )),
     }
 }
 
@@ -199,6 +213,30 @@ impl MctsPlayerAPI {
 }
 
 impl PlayerApiTrait for MctsPlayerAPI {
+    #[inline]
+    fn update_board(&mut self, _board: &Board) {}
+
+    #[inline]
+    fn get_move(&mut self, board: &Board) -> (usize, usize) {
+        self.0.search(board)
+    }
+}
+
+struct MctsRavePlayerAPI(mcts_rave::MCTSRave);
+
+impl MctsRavePlayerAPI {
+    #[inline]
+    fn new(playout_budget: usize, final_solve: bool, player: Case, board: &Board) -> Self {
+        Self(mcts_rave::MCTSRave::new(
+            player,
+            final_solve,
+            playout_budget,
+            board.clone(),
+        ))
+    }
+}
+
+impl PlayerApiTrait for MctsRavePlayerAPI {
     #[inline]
     fn update_board(&mut self, _board: &Board) {}
 
