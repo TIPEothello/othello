@@ -8,7 +8,7 @@ use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
 const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
-const RAVE_CONST: f64 = 300.0;
+const RAVE_CONST: f64 = 750.0;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -123,7 +123,7 @@ impl Node {
     fn get_exploration_score(&self, exploration_constant: f64, move_: &(usize, usize)) -> f64 {
         
         let rave = |child: &Node, parent: &Node| {
-            let alpha = 0.0_f64.max((RAVE_CONST - (child.played as f64)) / RAVE_CONST);
+            let alpha = f64::sqrt(RAVE_CONST / (3.0 * (child.played as f64) + RAVE_CONST));
             let uct =  (child.reward as f64 / child.played as f64) + exploration_constant * f64::sqrt(f64::ln(parent.played as f64) / child.played as f64);
             let amaf = if child.played_rave == 0 { 0.0_f64 } else { (child.reward_rave as f64)/(child.played_rave as f64) };
             (1.0 - alpha) * uct + alpha * amaf
@@ -175,11 +175,13 @@ impl Node {
         while let Some(best_move) = moves.pop() {
             let child = self.children.get_mut(&best_move).unwrap();
             if !child.is_fully_expanded {
-                let (endstate, moves) = child.expand(moves); //On expand le meilleur move qui n'est pas encore fully expanded
+                
+                let (endstate, mut movs) = child.expand(movs); //On expand le meilleur move qui n'est pas encore fully expanded
+                movs.push(best_move);
                 self.update_from_endstate(endstate);
-                self.update_from_endstate_rave(endstate, &moves);
+                self.update_from_endstate_rave(endstate, &movs);
                 self.update_fully_expanded();
-                return (endstate, moves);
+                return (endstate, movs);
             }
         }
 
@@ -272,6 +274,17 @@ impl MCTSRave {
                 self.get_best_move()
             }
         };
+
+        //Détection d'erreurs :
+
+        let available = self.root.state.available_moves(None);
+        if !available.contains(&move_) {
+            println!("[MCTSRave] Move foud that doesn't work : {:?}", &move_);
+            println!("Available moves vs children :");
+            println!("{:?}", available);
+            println!("{:?}", self.root.children.keys().collect::<Vec<&(usize, usize)>>())
+        }
+        
         self.promote_child(&move_);
         move_
     }
