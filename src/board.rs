@@ -102,7 +102,7 @@ impl Board {
             let mut s = String::new();
             s.push_str("Illegal move : ");
             s.push_str(&format!("{:?}", bmove));
-
+            println!("{}", self);
             return Err(s);
         }
         self.cases[bmove.0][bmove.1] = color;
