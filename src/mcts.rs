@@ -280,15 +280,15 @@ impl MCTS {
     }
 
     fn get_best_move(&mut self) -> (usize, usize) {
-        let mut best_winrate = 0.0f64;
+        let mut best_played = 0_u64;
         let mut best_moves: Vec<(usize, usize)> = vec![];
 
         for (&move_, child) in self.root.children.iter() {
-            let node_winrate = child.wins as f64 / child.played as f64;
-            if node_winrate > best_winrate {
-                best_winrate = node_winrate;
+            let node_played = child.played;
+            if node_played > best_played {
+                best_played = node_played;
                 best_moves = vec![move_];
-            } else if node_winrate == best_winrate {
+            } else if node_played == best_played {
                 best_moves.push(move_);
             }
         }
