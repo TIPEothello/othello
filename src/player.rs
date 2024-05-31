@@ -102,10 +102,10 @@ impl Player {
     }
 
     #[allow(dead_code)]
-    pub fn play_games(&mut self, n: u32, verbose: bool) -> (u32, u32, u32) {
+    pub fn play_games(&mut self, n: u32, verbose: bool, length: usize) -> (u32, u32, u32) {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         if verbose {
-            display_score(*score.lock(), n, (&self.strategy.0, &self.strategy.1));
+            display_score(*score.lock(), n, length, (&self.strategy.0, &self.strategy.1));
         }
         (0..n).into_par_iter().for_each(|_| {
             let mut board = Board::new();
@@ -144,7 +144,7 @@ impl Player {
                     }
                     if verbose {
                         go_3_lines_up();
-                        display_score(*locked, n, (&self.strategy.0, &self.strategy.1));
+                        display_score(*locked, n, length, (&self.strategy.0, &self.strategy.1));
                         break;
                     }
                 }
@@ -349,8 +349,9 @@ pub fn print_coords(c: &(usize, usize)) -> String {
     format!("{}{}", x as char, y as char)
 }
 
-fn display_score(score: (u32, u32, u32), n: u32, strategy: (&Strategy, &Strategy)) {
+fn display_score(score: (u32, u32, u32), n: u32, length: usize, strategy: (&Strategy, &Strategy)) {
     let (black, white, draw) = score;
+    let l = length as f32;
     let mut black_label = format!("Black ({:?}) :", strategy.0,);
     let mut white_label = format!("White ({:?}):", strategy.1,);
     let mut draw_label = "Draw:".to_string();
@@ -364,10 +365,15 @@ fn display_score(score: (u32, u32, u32), n: u32, strategy: (&Strategy, &Strategy
     let black_p = black as f32 / n as f32 * 100.0;
     let white_p = white as f32 / n as f32 * 100.0;
     let draw_p = draw as f32 / n as f32 * 100.0;
-    let black_score = "▮".repeat(black_p as usize) + " ".repeat(100 - black_p as usize).as_str();
+    let black_pixel = black as f32 / n as f32 * l;
+    let white_pixel = white as f32 / n as f32 * l;
+    let draw_pixel = draw as f32 / n as f32 * l;
 
-    let white_score = "▮".repeat(white_p as usize) + " ".repeat(100 - white_p as usize).as_str();
-    let draw_score = "▮".repeat(draw_p as usize) + " ".repeat(100 - draw_p as usize).as_str();
+
+    let black_score = "▮".repeat(black_pixel as usize) + " ".repeat(length - black_pixel as usize).as_str();
+
+    let white_score = "▮".repeat(white_pixel as usize) + " ".repeat(length - white_pixel as usize).as_str();
+    let draw_score = "▮".repeat(draw_pixel as usize) + " ".repeat(length - draw_pixel as usize).as_str();
     println!(
         "{black_label} [{}] {black_p:.2} %\n{white_label} [{}] {white_p:.2} %\n{draw_label} [{}] {draw_p:.2} %",
         black_score, white_score, draw_score

@@ -12,11 +12,11 @@ fn main() {
     let budget1 = &args[1].parse::<u8>().unwrap();
     let budget2 = &args[2].parse::<usize>().unwrap();
     let mut player = player::Player::new((
-        player::Strategy::Minimax { depth: *budget1 } ,
         player::Strategy::MCTSRave {
             playout_budget: *budget2,
             final_solve: true,
         },
+        player::Strategy::Minimax { depth: *budget1 } ,
     ));
-    player.play_games(100, true);
+    player.play_games(100, true, 70);
 }
