@@ -26,6 +26,8 @@ pub enum Strategy {
     MCTSRave {
         playout_budget: usize,
         final_solve: bool,
+        exploration: Option<f64>,
+        rave: Option<f64>
     },
 }
 
@@ -189,9 +191,13 @@ fn new_player_api(
         Strategy::MCTSRave {
             playout_budget,
             final_solve,
+            exploration,
+            rave
         } => Box::new(MctsRavePlayerAPI::new(
             playout_budget,
             final_solve,
+            exploration,
+            rave,
             player,
             board,
         )),
@@ -226,11 +232,13 @@ struct MctsRavePlayerAPI(mcts_rave::MCTSRave);
 
 impl MctsRavePlayerAPI {
     #[inline]
-    fn new(playout_budget: usize, final_solve: bool, player: Case, board: &Board) -> Self {
+    fn new(playout_budget: usize, final_solve: bool, exploration: Option<f64>, rave: Option<f64>, player: Case, board: &Board) -> Self {
         Self(mcts_rave::MCTSRave::new(
             player,
             final_solve,
             playout_budget,
+            exploration,
+            rave,
             board.clone(),
         ))
     }

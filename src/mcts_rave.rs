@@ -8,30 +8,31 @@ use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
 const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
-const RAVE_CONST: f64 = 750.0;
+const RAVE_CONST: f64 = 250.0;
 
 #[derive(Debug, Clone)]
 struct Node {
     played: u64,
-    reward: i64, // wins - losses
+    wins: u64, // wins - losses
     turn: Case,
     state: Board,
     children: FxHashMap<(usize, usize), Node>,
     is_fully_expanded: bool,
-    reward_rave: i64,
+    wins_rave: u64,
     played_rave: u64,
     exploration_constant: f64,
+    rave_constant: f64,
     winning_state: Option<Case>,
 }
 
 impl Node {
     fn from_expansion(parent: &Node, mut moves: Vec<(usize, usize)>, move_: (usize, usize)) -> (Node, EndState, Vec<(usize, usize)>) {
         let mut board = parent.state.clone();
-        let player = parent.turn.opponent();
+        let player = board.get_turn().opponent();
         let (is_end_state, (endstate, mut movs)) = match board.play_move(&move_) {
             Ok(BoardState::Ongoing) => (
                 false,
-                Node::simulate_random_playout(&mut board.clone(), player),
+                Node::simulate_random_playout(&mut board.clone()),
             ),
             Ok(BoardState::Ended(endstate)) => (true, (endstate, vec![])),
             Err(msg) => panic!(
@@ -46,10 +47,11 @@ impl Node {
             is_fully_expanded: is_end_state,
             played: 0,
             played_rave: 0,
-            reward_rave: 0,
-            reward: 0,
+            wins_rave: 0,
+            wins: 0,
             children: HashMap::default(),
             exploration_constant: parent.exploration_constant,
+            rave_constant: parent.rave_constant,
             winning_state: None,
         };
 
@@ -60,16 +62,13 @@ impl Node {
 
     fn simulate_random_playout(
         board: &mut Board,
-        player: Case,
     ) -> (EndState, Vec<(usize, usize)>) {
-        let mut curr_player = player;
         let mut rng = thread_rng();
         let mut moves: Vec<(usize, usize)> = Vec::new();
         loop {
             let move_ = board.available_moves(None).choose(&mut rng).unwrap().clone();
             let game_state = board.play_move(&move_);
             moves.push(move_.clone());
-            curr_player = curr_player.opponent();
             match game_state {
                 Ok(state) => match state {
                     BoardState::Ongoing => (),
@@ -83,26 +82,18 @@ impl Node {
     fn update_from_endstate(&mut self, endstate: EndState) -> () {
         self.played += 1;
         let EndState::Winner(winner) = endstate;
-        if winner == self.turn {
-            self.reward += 1;
-        } else if winner == self.turn.opponent() {
-            self.reward -= 1;
+        if winner == self.turn.opponent() {
+            self.wins += 1;
         }
     }
 
     fn update_from_endstate_rave(&mut self, endstate: EndState, moves: &Vec<(usize, usize)>) -> () {
         let EndState::Winner(winner) = endstate;
-        let reward: i64 = if winner == self.turn {
-            1
-        } else if winner == self.turn.opponent() {
-            -1
-        } else {
-            0
-        };
+        let wins = (winner == self.turn.opponent()) as u64;
         for i in moves {
             if let Some(c) = self.children.get_mut(&i) {
                 c.played_rave += 1;
-                c.reward_rave += reward;
+                c.wins_rave += wins;
             }
         }
     }
@@ -120,13 +111,14 @@ impl Node {
         }
     }
 
-    fn get_exploration_score(&self, exploration_constant: f64, move_: &(usize, usize)) -> f64 {
+    fn get_exploration_score(&self, exploration_constant: f64, rave_constant: f64, move_: &(usize, usize)) -> f64 {
         
         let rave = |child: &Node, parent: &Node| {
-            let alpha = f64::sqrt(RAVE_CONST / (3.0 * (child.played as f64) + RAVE_CONST));
-            let uct =  (child.reward as f64 / child.played as f64) + exploration_constant * f64::sqrt(f64::ln(parent.played as f64) / child.played as f64);
-            let amaf = if child.played_rave == 0 { 0.0_f64 } else { (child.reward_rave as f64)/(child.played_rave as f64) };
-            (1.0 - alpha) * uct + alpha * amaf
+            let alpha = f64::sqrt(rave_constant / (3.0 * (parent.played as f64) + rave_constant));
+            let uct =  (child.wins as f64 / child.played as f64) + exploration_constant * f64::sqrt(f64::ln(parent.played as f64) / child.played as f64);
+            let amaf = if child.played_rave == 0 { 0.0_f64 } else { (child.wins_rave as f64)/(child.played_rave as f64) };
+            (1.0 - alpha) * uct + alpha * amaf // alpha = 0 -> basic UCT
+            
         };
 
 
@@ -167,8 +159,8 @@ impl Node {
 
         moves.sort_by(|m1, m2| {
             //On sort les moves par UCT
-            self.get_exploration_score(self.exploration_constant, m1)
-                .partial_cmp(&self.get_exploration_score(self.exploration_constant, m2))
+            self.get_exploration_score(self.exploration_constant, self.rave_constant, m1)
+                .partial_cmp(&self.get_exploration_score(self.exploration_constant,self.rave_constant, m2))
                 .unwrap()
         });
 
@@ -203,11 +195,11 @@ impl Node {
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {
-            let mut wstate = self.turn;
+            let mut wstate = self.turn.opponent();
             for node in self.children.values_mut() {
                 node.generate_winning_state();
                 wstate = Node::update_winning_state(
-                    self.turn.opponent(),
+                    self.turn,
                     wstate,
                     node.winning_state.unwrap(),
                 );
@@ -225,17 +217,18 @@ pub struct MCTSRave {
 }
 
 impl MCTSRave {
-    pub fn new(player: Case, final_solve: bool, playout_budget: usize, board: Board) -> MCTSRave {
+    pub fn new(player: Case, final_solve: bool, playout_budget: usize, exploration_constant: Option<f64>, rave_constant: Option<f64>, board: Board) -> MCTSRave {
         let root = Node {
             state: board,
-            turn: player.opponent(),
+            turn: player,
             is_fully_expanded: false,
             played: 0,
-            reward: 0,
-            reward_rave: 0,
+            wins: 0,
+            wins_rave: 0,
             played_rave: 0,
             children: HashMap::default(),
-            exploration_constant: EXPLORATION_PARAMETER,
+            exploration_constant: exploration_constant.unwrap_or(EXPLORATION_PARAMETER),
+            rave_constant: rave_constant.unwrap_or(RAVE_CONST),
             winning_state: None,
         };
 
@@ -301,15 +294,15 @@ impl MCTSRave {
     }
 
     fn get_best_move(&mut self) -> (usize, usize) {
-        let mut best_winrate = std::i64::MIN;
+        let mut most_played = 0;
         let mut best_moves: Vec<(usize, usize)> = vec![];
 
         for (&move_, child) in self.root.children.iter() {
-            let node_winrate = child.reward;
-            if node_winrate > best_winrate {
-                best_winrate = node_winrate;
+            let node_played = child.played;
+            if node_played > most_played {
+                most_played = node_played;
                 best_moves = vec![move_];
-            } else if node_winrate == best_winrate {
+            } else if node_played == most_played {
                 best_moves.push(move_);
             }
         }
