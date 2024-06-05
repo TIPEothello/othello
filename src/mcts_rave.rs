@@ -26,21 +26,22 @@ struct Node {
 }
 
 impl Node {
-    fn from_expansion(parent: &Node, mut moves: Vec<(usize, usize)>, move_: (usize, usize)) -> (Node, EndState, Vec<(usize, usize)>) {
+    fn from_expansion(parent: &Node, mut moves_black: Vec<(usize, usize)>, mut moves_white: Vec<(usize, usize)>, move_: (usize, usize)) -> (Node, EndState, (Vec<(usize, usize)>, Vec<(usize, usize)>)) {
         let mut board = parent.state.clone();
         let player = board.get_turn().opponent();
-        let (is_end_state, (endstate, mut movs)) = match board.play_move(&move_) {
+        let (is_end_state, (endstate, mut movs_b, mut movs_w)) = match board.play_move(&move_) {
             Ok(BoardState::Ongoing) => (
                 false,
                 Node::simulate_random_playout(&mut board.clone()),
             ),
-            Ok(BoardState::Ended(endstate)) => (true, (endstate, vec![])),
+            Ok(BoardState::Ended(endstate)) => (true, (endstate, vec![], vec![])),
             Err(msg) => panic!(
                 "error in Node.from_expansion when calling board.play_move(): {}",
                 msg
             ),
         };
-        moves.append(&mut movs);
+        moves_black.append(&mut movs_b);
+        moves_white.append(&mut movs_w);
         let mut node = Node {
             state: board,
             turn: player,
@@ -57,22 +58,28 @@ impl Node {
 
         node.update_from_endstate(endstate);
 
-        (node, endstate, moves)
+        (node, endstate, (moves_black, moves_white))
     }
 
     fn simulate_random_playout(
         board: &mut Board,
-    ) -> (EndState, Vec<(usize, usize)>) {
+    ) -> (EndState, Vec<(usize, usize)>, Vec<(usize, usize)>) {
         let mut rng = thread_rng();
-        let mut moves: Vec<(usize, usize)> = Vec::new();
+        let mut moves_black: Vec<(usize, usize)> = Vec::new();
+        let mut moves_white: Vec<(usize, usize)> = Vec::new();
         loop {
+            let turn = board.get_turn();
             let move_ = board.available_moves(None).choose(&mut rng).unwrap().clone();
             let game_state = board.play_move(&move_);
-            moves.push(move_.clone());
+            if turn == Case::White {
+                moves_white.push(move_.clone());
+            } else {
+                moves_black.push(move_.clone())
+            }
             match game_state {
                 Ok(state) => match state {
                     BoardState::Ongoing => (),
-                    BoardState::Ended(endstate) => return (endstate, moves),
+                    BoardState::Ended(endstate) => return (endstate, moves_black, moves_white),
                 },
                 Err(msg) => panic!("Err in Node.simulate_random_playout(): {}", msg),
             }
@@ -87,13 +94,19 @@ impl Node {
         }
     }
 
-    fn update_from_endstate_rave(&mut self, endstate: EndState, moves: &Vec<(usize, usize)>) -> () {
+    fn update_from_endstate_rave(&mut self, endstate: EndState, moves_b: &Vec<(usize, usize)>, moves_w: &Vec<(usize, usize)>) -> () {
         let EndState::Winner(winner) = endstate;
-        let wins = (winner == self.turn.opponent()) as u64;
-        for i in moves {
+        let wins = (winner == Case::Black) as u64;
+        for i in moves_b {
             if let Some(c) = self.children.get_mut(&i) {
                 c.played_rave += 1;
                 c.wins_rave += wins;
+            }
+        }
+        for i in moves_w {
+            if let Some(c) = self.children.get_mut(&i) {
+                c.played_rave += 1;
+                c.wins_rave += 1 - wins;
             }
         }
     }
@@ -137,21 +150,25 @@ impl Node {
     }
 
     //Un round d'expansion
-    fn expand(&mut self, movs: Vec<(usize, usize)>) -> (EndState, Vec<(usize, usize)>) {
+    fn expand(&mut self, movs_b: Vec<(usize, usize)>, movs_w: Vec<(usize, usize)>) -> (EndState, Vec<(usize, usize)>, Vec<(usize, usize)>) {
         if self.is_fully_expanded {
-            return (EndState::Winner(Case::Empty), movs);
+            return (EndState::Winner(Case::Empty), movs_b, movs_w);
         }
-
+        let turn = self.state.get_turn();
         let mut moves = self.state.available_moves(None);
         for move_ in moves.iter() {
             if !self.children.contains_key(move_) {
-                let (child_node, endstate, mut movs) = Node::from_expansion(self, movs, *move_);
-                movs.push(*move_);
+                let (child_node, endstate, (mut movs_b, mut movs_w)) = Node::from_expansion(self, movs_b, movs_w, *move_);
+                if turn == Case::Black {
+                    movs_b.push(*move_);
+                } else {
+                    movs_w.push(*move_);
+                }
                 self.children.insert(*move_, child_node); // Ajoute le move aux children
                 self.update_from_endstate(endstate); // Si le move est terminal on update les scores
-                self.update_from_endstate_rave(endstate, &movs);
+                self.update_from_endstate_rave(endstate, &movs_b, &movs_w);
                 self.update_fully_expanded(); // Si tous les children sont fully expanded on le note comme fully expanded
-                return (endstate, movs);
+                return (endstate, movs_b, movs_w);
             }
         }
         // Si on arrive là, tous les children ont déjà été visités
@@ -168,12 +185,16 @@ impl Node {
             let child = self.children.get_mut(&best_move).unwrap();
             if !child.is_fully_expanded {
                 
-                let (endstate, mut movs) = child.expand(movs); //On expand le meilleur move qui n'est pas encore fully expanded
-                movs.push(best_move);
+                let (endstate, mut movs_b, mut movs_w) = child.expand(movs_b, movs_w); //On expand le meilleur move qui n'est pas encore fully expanded
+                if turn == Case::Black {
+                    movs_b.push(best_move);
+                } else {
+                    movs_w.push(best_move);
+                }
                 self.update_from_endstate(endstate);
-                self.update_from_endstate_rave(endstate, &movs);
+                self.update_from_endstate_rave(endstate, &movs_b, &movs_w);
                 self.update_fully_expanded();
-                return (endstate, movs);
+                return (endstate, movs_b, movs_w);
             }
         }
 
@@ -261,7 +282,7 @@ impl MCTSRave {
                 m
             } else {
                 for _ in 0..self.playout_budget {
-                    self.root.expand(vec![]);
+                    self.root.expand(vec![], vec![]);
                 }
 
                 self.get_best_move()
