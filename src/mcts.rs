@@ -184,7 +184,7 @@ pub struct MCTS {
 }
 
 impl MCTS {
-    pub fn new(player: Case, final_solve: bool, playout_budget: usize, board: Board) -> MCTS {
+    pub fn new(player: Case, final_solve: bool, playout_budget: usize, exploration_constant: Option<f64>, board: Board) -> MCTS {
         let root = Node {
             state: board,
             turn: player,
@@ -192,7 +192,7 @@ impl MCTS {
             played: 0,
             wins: 0,
             children: HashMap::default(),
-            exploration_constant: EXPLORATION_PARAMETER,
+            exploration_constant: exploration_constant.unwrap_or(EXPLORATION_PARAMETER),
             winning_state: None,
         };
 
