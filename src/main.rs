@@ -9,18 +9,15 @@ mod rules;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let budget = &args[1].parse::<usize>().unwrap();
+    let budget2 = args[1].parse::<usize>().unwrap();
     let mut player = player::Player::new((
-        player::Strategy::MCTS {
-            playout_budget: *budget,
-            final_solve: true,
-        },
         player::Strategy::MCTSRave {
-            playout_budget: *budget,
+            playout_budget: budget2,
             final_solve: true,
-            exploration: None,
-            rave: Some(400.0)
+            exploration: Some(0.7),
+            rave: Some(750.0)
         },
+        player::Strategy::Manual
     ));
-    player.play_games(100, true, 50);
+    player.progressive_play();
 }
