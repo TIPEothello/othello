@@ -22,5 +22,6 @@ fn main() {
             final_solve: true,
         },
     ));
+    println!("exploration constant: {}", mcts::EXPLORATION_PARAMETER);
     player.play_games(*games, true, 50);
 }
