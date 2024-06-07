@@ -7,7 +7,7 @@ use crate::board::{Board, BoardState, Case, EndState};
 use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
-const EXPLORATION_PARAMETER: f64 = std::f64::consts::SQRT_2;
+const EXPLORATION_PARAMETER: f64 = 1.6;
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -158,7 +158,8 @@ impl Node {
         current
     }
 
-    pub fn generate_winning_state(&mut self) -> () { // Algorithme de recherche d'attracteur
+    pub fn generate_winning_state(&mut self) -> () {
+        // Algorithme de recherche d'attracteur
         if self.state.is_ended() {
             self.winning_state = Some(self.state.current_winner());
         } else {

@@ -10,14 +10,17 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let budget1 = &args[1].parse::<usize>().unwrap();
     let budget2 = &args[2].parse::<u8>().unwrap();
+    let games = &args
+        .get(3)
+        .unwrap_or(&String::from("100"))
+        .parse::<u32>()
+        .unwrap_or(100);
     let mut player = player::Player::new((
+        player::Strategy::Minimax { depth: *budget2 },
         player::Strategy::MCTS {
             playout_budget: *budget1,
             final_solve: true,
         },
-        player::Strategy::Minimax { depth: *budget2 }
-
-,
     ));
-    player.play_games(100, true, 70);
+    player.play_games(*games, true, 50);
 }
