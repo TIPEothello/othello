@@ -4,7 +4,6 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct Tree {
-    pub depth: u8,
     pub subtree: Option<Vec<Tree>>,
     pub moves: usize,
     pub mov: Option<(usize, usize)>,
@@ -18,7 +17,6 @@ impl Tree {
         let moves = board.available_moves(None);
         if depth == 0 || moves.is_empty() {
             Tree {
-                depth: 0,
                 subtree: None,
                 moves: moves.len(),
                 cases: board.cases,
@@ -34,7 +32,6 @@ impl Tree {
                 board.reset(1);
             }
             Tree {
-                depth,
                 subtree: Some(subtrees),
                 moves: moves.len(),
                 score: board.score(),
@@ -45,8 +42,44 @@ impl Tree {
         }
     }
 
-    pub fn best_move(&mut self, color: Case) -> (usize, usize) {
-        minimax(self, color).mov.unwrap()
+    pub fn expand_tree(&mut self, mut board: &mut Board, depth: u8) {
+        if depth == 0 {
+            return;
+        }
+        if self.subtree.is_none() {
+            let mut subtree = Vec::new();
+            for m in board.available_moves(None) {
+                board.play_move(&m).unwrap();
+                subtree.push(Tree::from_board(&mut board, Some(m), depth - 1));
+                board.reset(1);
+            }
+            self.subtree = Some(subtree);
+        } else {
+            for subt in self.subtree.as_mut().unwrap() {
+                board.play_move(&subt.mov.unwrap()).unwrap();
+                subt.expand_tree(&mut board, depth - 1);
+                board.reset(1);
+            }
+        }
+    }
+
+    pub fn best_move(&mut self, color: Case, board: &Board, depth: u8) -> (usize, usize) {
+        self.expand_tree(&mut board.clone(), depth);
+        let m = minimax(self, color).mov.unwrap();
+        // on coupe l'arbre
+        for i in 0..self.moves {
+            if self.subtree.as_ref().unwrap()[i].mov.unwrap() == m {
+                let subt = self.subtree.as_ref().unwrap()[i].clone();
+                self.subtree = subt.subtree;
+                self.moves = subt.moves;
+                self.cases = subt.cases;
+                self.score = subt.score;
+                self.value = subt.value;
+                self.mov = subt.mov;
+                return m;
+            }
+        }
+        panic!("No move found");
     }
 }
 
@@ -58,8 +91,8 @@ impl Display for Tree {
                 res.push_str("   ");
             }
             res.push_str(&format!(
-                "Depth: {}, Moves: {}, Score: {:?}, Value: {:?}, Move: {:?}",
-                tree.depth, tree.moves, tree.score, tree.value, tree.mov
+                " Moves: {}, Score: {:?}, Value: {:?}, Move: {:?}",
+                tree.moves, tree.score, tree.value, tree.mov
             ));
             res.push('\n');
             if let Some(subtree) = &tree.subtree {
@@ -86,29 +119,25 @@ pub const PLACEMENT_SCORE: [[isize; 8]; 8] = [
 
 pub fn minimax(tree: &mut Tree, color: Case) -> Tree {
     pub fn minimax_rec(
-        original_score: (usize, usize),
         tree: &mut Tree,
-        color: Case,
-        current: Case,
+        max_color: Case,
+        current_color: Case,
         mut alpha: i32,
         mut beta: i32,
     ) -> i32 {
         if tree.moves == 0 || tree.subtree.is_none() {
-            let val = evaluate(tree, color);
+            let val = evaluate(tree, max_color);
             tree.value = Some(val);
             return val;
         }
-        let mut best = if current == color { i32::MIN } else { i32::MAX };
+        let mut best = if current_color == max_color {
+            i32::MIN
+        } else {
+            i32::MAX
+        };
         for subtree in tree.subtree.as_mut().unwrap() {
-            let val = minimax_rec(
-                original_score,
-                subtree,
-                color,
-                current.opponent(),
-                alpha,
-                beta,
-            );
-            if color == current {
+            let val = minimax_rec(subtree, max_color, current_color.opponent(), alpha, beta);
+            if max_color == current_color {
                 best = best.max(val);
                 alpha = alpha.max(val);
                 if best >= beta {
@@ -126,7 +155,7 @@ pub fn minimax(tree: &mut Tree, color: Case) -> Tree {
         best
     }
 
-    let best = minimax_rec(tree.score, tree, color, color, i32::MIN, i32::MAX);
+    let best = minimax_rec(tree, color, color, i32::MIN, i32::MAX);
     let best_tree = tree
         .subtree
         .as_ref()

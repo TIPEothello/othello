@@ -7,6 +7,10 @@ mod player;
 mod rules;
 
 fn main() {
+    let _rayon_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build_global()
+        .unwrap();
     let args: Vec<String> = env::args().collect();
     let budget1 = &args[1].parse::<usize>().unwrap();
     let budget2 = &args[2].parse::<u8>().unwrap();

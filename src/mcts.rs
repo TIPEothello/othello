@@ -7,7 +7,7 @@ use crate::board::{Board, BoardState, Case, EndState};
 use fxhash::FxHashMap;
 use rand::{seq::SliceRandom, thread_rng};
 
-pub const EXPLORATION_PARAMETER: f64 = 0.4;
+pub const EXPLORATION_PARAMETER: f64 = 0.7;
 
 #[derive(Debug, Clone)]
 struct Node {

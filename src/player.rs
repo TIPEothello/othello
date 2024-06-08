@@ -100,7 +100,12 @@ impl Player {
     pub fn play_games(&mut self, n: u32, verbose: bool, length: usize) -> (u32, u32, u32) {
         let score: Mutex<(u32, u32, u32)> = Mutex::new((0, 0, 0));
         if verbose {
-            display_score(*score.lock(), n, length, (&self.strategy.0, &self.strategy.1));
+            display_score(
+                *score.lock(),
+                n,
+                length,
+                (&self.strategy.0, &self.strategy.1),
+            );
         }
         (0..n).into_par_iter().for_each(|_| {
             let mut board = Board::new();
@@ -257,23 +262,41 @@ impl PlayerApiTrait for ManualPlayerAPI {
     }
 }
 
-struct MinimaxPlayerAPI(Tree);
+struct MinimaxPlayerAPI(Tree, u8);
 
 impl MinimaxPlayerAPI {
     #[inline]
     fn new(depth: u8, board: &Board) -> Self {
-        Self(Tree::from_board(&mut board.clone(), None, depth))
+        Self(Tree::from_board(&mut board.clone(), None, depth), depth)
     }
 }
 
 impl PlayerApiTrait for MinimaxPlayerAPI {
     #[inline]
     fn update_board(&mut self, board: &Board) {
-        self.0 = Tree::from_board(&mut board.clone(), None, self.0.depth);
+        if self.1 <= 2 {
+            self.0 = Tree::from_board(&mut board.clone(), None, self.1);
+        }
     }
     #[inline]
     fn get_move(&mut self, board: &Board) -> (usize, usize) {
-        self.0.best_move(board.get_turn())
+        if self.1 > 2 {
+            if let Some(m) = board.history.moves.last() {
+                for i in 0..self.0.moves {
+                    if self.0.subtree.as_ref().unwrap()[i].mov.unwrap() == *m {
+                        let subt = self.0.subtree.as_ref().unwrap()[i].clone();
+                        self.0.subtree = subt.subtree;
+                        self.0.moves = subt.moves;
+                        self.0.cases = subt.cases;
+                        self.0.score = subt.score;
+                        self.0.value = subt.value;
+                        self.0.mov = subt.mov;
+                        break;
+                    }
+                }
+            }
+        }
+        self.0.best_move(board.get_turn(), board, self.1)
     }
 }
 
@@ -331,11 +354,13 @@ fn display_score(score: (u32, u32, u32), n: u32, length: usize, strategy: (&Stra
     let white_pixel = white as f32 / n as f32 * l;
     let draw_pixel = draw as f32 / n as f32 * l;
 
+    let black_score =
+        "▮".repeat(black_pixel as usize) + " ".repeat(length - black_pixel as usize).as_str();
 
-    let black_score = "▮".repeat(black_pixel as usize) + " ".repeat(length - black_pixel as usize).as_str();
-
-    let white_score = "▮".repeat(white_pixel as usize) + " ".repeat(length - white_pixel as usize).as_str();
-    let draw_score = "▮".repeat(draw_pixel as usize) + " ".repeat(length - draw_pixel as usize).as_str();
+    let white_score =
+        "▮".repeat(white_pixel as usize) + " ".repeat(length - white_pixel as usize).as_str();
+    let draw_score =
+        "▮".repeat(draw_pixel as usize) + " ".repeat(length - draw_pixel as usize).as_str();
     println!(
         "{black_label} [{}] {black_p:.2} %\n{white_label} [{}] {white_p:.2} %\n{draw_label} [{}] {draw_p:.2} %",
         black_score, white_score, draw_score
