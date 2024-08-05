@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 ansi_term = "0.12.1"
 rand = {version="0.8.5",features=["std_rng"]}
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 rayon = "1.7.0"
 fxhash = "0.2.1"
 parking_lot = "0.12.1"
